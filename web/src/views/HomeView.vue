@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { api, type RoomState } from '../api/client'
 import { useRoomStore } from '../stores/room'
 
 const router = useRouter()
@@ -17,6 +18,8 @@ const createForm = reactive({
 
 const joinCode = ref('')
 const joinNickname = ref('')
+const continuableRooms = ref<RoomState[]>([])
+const continueLoading = ref(false)
 
 const createErrors = reactive({
   ownerNickname: '',
@@ -93,6 +96,31 @@ async function joinRoom() {
     else if (message.includes('昵称')) joinErrors.nickname = message
   }
 }
+
+async function loadContinuableRooms() {
+  continueLoading.value = true
+  const pairs = Object.keys(localStorage)
+    .filter((key) => key.startsWith('mahjong_scoreboard_player_'))
+    .map((key) => ({
+      code: key.replace('mahjong_scoreboard_player_', ''),
+      playerId: Number(localStorage.getItem(key))
+    }))
+
+  const results = await Promise.allSettled(pairs.map(async ({ code, playerId }) => {
+    const roomState = await api.getRoom(code)
+    const isCurrentPlayer = roomState.players.some((player) => player.id === playerId)
+    return isCurrentPlayer && roomState.room.status !== 'finished' ? roomState : null
+  }))
+
+  continuableRooms.value = results
+    .map((result) => result.status === 'fulfilled' ? result.value : null)
+    .filter((roomState): roomState is RoomState => Boolean(roomState))
+  continueLoading.value = false
+}
+
+onMounted(() => {
+  loadContinuableRooms()
+})
 </script>
 
 <template>
@@ -104,6 +132,20 @@ async function joinRoom() {
       </div>
       <RouterLink class="ghost-button" to="/history">历史</RouterLink>
     </header>
+
+    <section v-if="continuableRooms.length || continueLoading" class="panel">
+      <div class="section-title">
+        <h2>继续对局</h2>
+        <span v-if="continueLoading">检查中</span>
+      </div>
+      <div v-if="continuableRooms.length" class="history-list">
+        <RouterLink v-for="item in continuableRooms" :key="item.room.code" class="history-item" :to="`/room/${item.room.code}`">
+          <strong>{{ item.room.name || item.room.code }}</strong>
+          <span>{{ item.players.map((player) => player.nickname).join('、') }}</span>
+          <small>{{ item.room.status === 'waiting' ? '等待开局' : '进行中' }}</small>
+        </RouterLink>
+      </div>
+    </section>
 
     <section class="panel">
       <h2>创建房间</h2>

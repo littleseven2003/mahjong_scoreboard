@@ -222,6 +222,11 @@ select:focus {
   color: #236f4e;
 }
 
+.danger-outline {
+  border-color: #ad3131;
+  color: #ad3131;
+}
+
 .ghost-button {
   min-height: 40px;
   padding: 0 14px;
@@ -382,6 +387,49 @@ button:disabled {
 .timeline-main small {
   color: #8a6a13;
   font-weight: 800;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(17, 28, 22, 0.48);
+}
+
+.modal-panel {
+  width: min(100%, 420px);
+  padding: 18px;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 60px rgba(17, 28, 22, 0.28);
+}
+
+.undo-detail {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid #e0e7dd;
+  border-radius: 8px;
+  background: #f8faf7;
+}
+
+.undo-detail span {
+  color: #67786d;
+}
+
+.undo-detail strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.modal-close {
+  width: 100%;
+  margin-top: 12px;
 }
 
 .empty,

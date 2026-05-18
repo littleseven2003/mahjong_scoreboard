@@ -2,6 +2,7 @@ import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import { Server } from 'socket.io'
 import {
+  cancelTransactionUndo,
   confirmTransactionUndo,
   createRoom,
   finishGame,
@@ -103,6 +104,20 @@ app.post('/api/rooms/:code/transfer', async (request, reply) => {
 app.post('/api/rooms/:code/transactions/:transactionId/undo-confirm', async (request, reply) => {
   try {
     const state = confirmTransactionUndo(
+      request.params.code,
+      request.params.transactionId,
+      request.body?.playerId
+    )
+    broadcastRoom(state)
+    reply.send(state)
+  } catch (error) {
+    sendError(reply, error)
+  }
+})
+
+app.post('/api/rooms/:code/transactions/:transactionId/undo-cancel', async (request, reply) => {
+  try {
+    const state = cancelTransactionUndo(
       request.params.code,
       request.params.transactionId,
       request.body?.playerId

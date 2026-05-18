@@ -128,6 +128,12 @@ export const api = {
       body: JSON.stringify({ playerId })
     })
   },
+  cancelUndo(code: string, transactionId: number, playerId: number) {
+    return request<RoomState>(`/api/rooms/${code}/transactions/${transactionId}/undo-cancel`, {
+      method: 'POST',
+      body: JSON.stringify({ playerId })
+    })
+  },
   finish(code: string, playerId: number) {
     return request<RoomState>(`/api/rooms/${code}/finish`, {
       method: 'POST',

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api/client'
 import { useRoomStore } from '../stores/room'
@@ -14,6 +14,8 @@ const room = computed(() => state.value?.room)
 const players = computed(() => state.value?.players || [])
 const activeTransactions = computed(() => state.value?.transactions || [])
 const visibleTransactions = computed(() => activeTransactions.value)
+const dismissedUndoIds = ref<number[]>([])
+const undoDialogTransactionId = ref<number | null>(null)
 
 const transferForm = reactive({
   fromPlayerId: 0,
@@ -24,14 +26,60 @@ const transferForm = reactive({
 
 const quickAmounts = [1, 2, 5, 10, 20, 50, 100]
 
+const fromOptions = computed(() => {
+  if (!roomStore.isOwner && roomStore.playerId) {
+    return players.value.filter((player) => player.id === roomStore.playerId)
+  }
+  return players.value.filter((player) => player.id !== transferForm.toPlayerId)
+})
+
+const toOptions = computed(() =>
+  players.value.filter((player) => player.id !== transferForm.fromPlayerId)
+)
+
+const selectedUndoTransaction = computed(() =>
+  activeTransactions.value.find((item) => item.id === undoDialogTransactionId.value) || null
+)
+
+const pendingUndoForMe = computed(() =>
+  activeTransactions.value.find((item) => shouldShowUndoDialog(item) && !dismissedUndoIds.value.includes(item.id)) || null
+)
+
 onMounted(() => {
   roomStore.loadRoom(code.value)
 })
 
 watch(players, (nextPlayers) => {
-  if (!transferForm.fromPlayerId && nextPlayers[0]) transferForm.fromPlayerId = nextPlayers[0].id
-  if (!transferForm.toPlayerId && nextPlayers[1]) transferForm.toPlayerId = nextPlayers[1].id
+  if (!nextPlayers.length) return
+
+  if (!roomStore.isOwner && roomStore.playerId) {
+    transferForm.fromPlayerId = roomStore.playerId
+  } else if (!fromOptions.value.some((player) => player.id === transferForm.fromPlayerId)) {
+    transferForm.fromPlayerId = fromOptions.value[0]?.id || nextPlayers[0].id
+  }
+
+  if (!toOptions.value.some((player) => player.id === transferForm.toPlayerId)) {
+    transferForm.toPlayerId = toOptions.value[0]?.id || 0
+  }
 }, { immediate: true })
+
+watch(pendingUndoForMe, (item) => {
+  if (item && !undoDialogTransactionId.value) {
+    undoDialogTransactionId.value = item.id
+  }
+})
+
+watch(() => transferForm.fromPlayerId, () => {
+  if (transferForm.toPlayerId === transferForm.fromPlayerId) {
+    transferForm.toPlayerId = toOptions.value[0]?.id || 0
+  }
+})
+
+watch(() => transferForm.toPlayerId, () => {
+  if (transferForm.fromPlayerId === transferForm.toPlayerId) {
+    transferForm.fromPlayerId = fromOptions.value[0]?.id || 0
+  }
+})
 
 function playerDiff(score: number) {
   return score - (room.value?.initialScore || 0)
@@ -72,6 +120,10 @@ async function submitTransfer() {
   transferForm.remark = ''
 }
 
+function playerOptionLabel(player: { id: number; nickname: string }) {
+  return player.id === roomStore.playerId ? `${player.nickname}（自己）` : player.nickname
+}
+
 function addQuickAmount(amount: number) {
   transferForm.amount = Math.max(0, Number(transferForm.amount || 0) + amount)
 }
@@ -86,6 +138,20 @@ function canConfirmUndo(item: { fromPlayerId: number; toPlayerId: number; isReve
     && (item.fromPlayerId === roomStore.playerId || item.toPlayerId === roomStore.playerId)
 }
 
+function shouldShowUndoDialog(item: {
+  fromPlayerId: number
+  toPlayerId: number
+  isReverted: boolean
+  undoRequestedAt: string | null
+  undoFromConfirmedAt: string | null
+  undoToConfirmedAt: string | null
+}) {
+  if (room.value?.status !== 'playing' || item.isReverted || !item.undoRequestedAt) return false
+  if (item.fromPlayerId === roomStore.playerId) return !item.undoFromConfirmedAt
+  if (item.toPlayerId === roomStore.playerId) return !item.undoToConfirmedAt
+  return false
+}
+
 function undoStatus(item: {
   isReverted: boolean
   undoRequestedAt: string | null
@@ -94,15 +160,34 @@ function undoStatus(item: {
 }) {
   if (item.isReverted) return '已撤销'
   if (!item.undoRequestedAt) return '未申请撤销'
-  const fromDone = item.undoFromConfirmedAt ? '付方已确认' : '付方待确认'
-  const toDone = item.undoToConfirmedAt ? '收方已确认' : '收方待确认'
+  const fromDone = item.undoFromConfirmedAt ? '扣分方已确认' : '扣分方待确认'
+  const toDone = item.undoToConfirmedAt ? '加分方已确认' : '加分方待确认'
   return `${fromDone} / ${toDone}`
+}
+
+function openUndoDialog(transactionId: number) {
+  undoDialogTransactionId.value = transactionId
+  dismissedUndoIds.value = dismissedUndoIds.value.filter((id) => id !== transactionId)
+}
+
+function closeUndoDialogTemporarily() {
+  if (undoDialogTransactionId.value) {
+    dismissedUndoIds.value = [...new Set([...dismissedUndoIds.value, undoDialogTransactionId.value])]
+  }
+  undoDialogTransactionId.value = null
 }
 
 async function confirmUndo(transactionId: number) {
   if (!ensurePlayer()) return
-  if (!window.confirm('确认申请或同意撤销这笔流水？收付双方都确认后才会回滚分数。')) return
   await roomStore.applyAction(() => api.confirmUndo(code.value, transactionId, roomStore.playerId!))
+  undoDialogTransactionId.value = null
+}
+
+async function cancelUndo(transactionId: number) {
+  if (!ensurePlayer()) return
+  await roomStore.applyAction(() => api.cancelUndo(code.value, transactionId, roomStore.playerId!))
+  dismissedUndoIds.value = dismissedUndoIds.value.filter((id) => id !== transactionId)
+  undoDialogTransactionId.value = null
 }
 
 async function finish() {
@@ -160,15 +245,15 @@ async function finish() {
         </div>
         <div class="grid two">
           <label>
-            付款方
-            <select v-model.number="transferForm.fromPlayerId">
-              <option v-for="player in players" :key="player.id" :value="player.id">{{ player.nickname }}</option>
+            扣分玩家
+            <select v-model.number="transferForm.fromPlayerId" :disabled="!roomStore.isOwner">
+              <option v-for="player in fromOptions" :key="player.id" :value="player.id">{{ playerOptionLabel(player) }}</option>
             </select>
           </label>
           <label>
-            收款方
+            加分玩家
             <select v-model.number="transferForm.toPlayerId">
-              <option v-for="player in players" :key="player.id" :value="player.id">{{ player.nickname }}</option>
+              <option v-for="player in toOptions" :key="player.id" :value="player.id">{{ playerOptionLabel(player) }}</option>
             </select>
           </label>
         </div>
@@ -212,7 +297,7 @@ async function finish() {
         <div v-else class="timeline">
           <article v-for="item in visibleTransactions" :key="item.id" :class="{ reverted: item.isReverted, pending: item.undoRequestedAt && !item.isReverted }">
             <div class="timeline-main">
-              <strong>{{ item.fromNickname }} 给 {{ item.toNickname }} {{ item.amount }} 分</strong>
+            <strong>{{ item.fromNickname }} 扣 {{ item.amount }} 分，{{ item.toNickname }} 加 {{ item.amount }} 分</strong>
               <span>{{ item.remark || '无备注' }}</span>
               <small>{{ undoStatus(item) }}</small>
             </div>
@@ -220,13 +305,36 @@ async function finish() {
               v-if="canConfirmUndo(item)"
               class="ghost-button danger compact-button"
               :disabled="roomStore.loading"
-              @click="confirmUndo(item.id)"
+              @click="item.undoRequestedAt ? openUndoDialog(item.id) : confirmUndo(item.id)"
             >
-              {{ item.undoRequestedAt ? '确认撤销' : '申请撤销' }}
+              {{ item.undoRequestedAt ? '处理撤销' : '申请撤销' }}
             </button>
           </article>
         </div>
       </section>
+
+      <div v-if="selectedUndoTransaction" class="modal-backdrop">
+        <section class="modal-panel">
+          <h2>撤销确认</h2>
+          <div class="undo-detail">
+            <span>扣分玩家</span>
+            <strong>{{ selectedUndoTransaction.fromNickname }}</strong>
+            <span>加分玩家</span>
+            <strong>{{ selectedUndoTransaction.toNickname }}</strong>
+            <span>分数</span>
+            <strong>{{ selectedUndoTransaction.amount }}</strong>
+            <span>备注</span>
+            <strong>{{ selectedUndoTransaction.remark || '无备注' }}</strong>
+          </div>
+          <button class="primary-button" :disabled="roomStore.loading" @click="confirmUndo(selectedUndoTransaction.id)">
+            确认撤销
+          </button>
+          <button class="secondary-button danger-outline" :disabled="roomStore.loading" @click="cancelUndo(selectedUndoTransaction.id)">
+            取消撤销
+          </button>
+          <button class="ghost-button modal-close" @click="closeUndoDialogTemporarily">暂时关闭</button>
+        </section>
+      </div>
     </template>
   </main>
 </template>

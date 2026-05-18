@@ -306,7 +306,7 @@ export function transferScore(code, payload) {
     const fromPlayerId = Number(payload.fromPlayerId)
     const toPlayerId = Number(payload.toPlayerId)
     if (fromPlayerId === toPlayerId) {
-      const error = new Error('付款方和收款方不能相同')
+      const error = new Error('扣分玩家和加分玩家不能相同')
       error.statusCode = 400
       throw error
     }
@@ -319,6 +319,13 @@ export function transferScore(code, payload) {
     if (!fromPlayer || !toPlayer || (createdBy && !getPlayerRow(createdBy, room.id))) {
       const error = new Error('玩家不存在或不属于该房间')
       error.statusCode = 400
+      throw error
+    }
+
+    const actor = createdBy ? getPlayerRow(createdBy, room.id) : null
+    if (actor && !actor.is_owner && actor.id !== fromPlayerId) {
+      const error = new Error('非房主只能以自己作为扣分玩家')
+      error.statusCode = 403
       throw error
     }
 
@@ -365,7 +372,7 @@ export function confirmTransactionUndo(code, transactionId, playerId) {
     const isFromPlayer = item.from_player_id === actorId
     const isToPlayer = item.to_player_id === actorId
     if (!isFromPlayer && !isToPlayer) {
-      const error = new Error('只有该笔流水的收付双方可以确认撤销')
+      const error = new Error('只有该笔流水的双方可以确认撤销')
       error.statusCode = 403
       throw error
     }
@@ -397,6 +404,53 @@ export function confirmTransactionUndo(code, transactionId, playerId) {
       db.prepare('UPDATE players SET current_score = current_score - ? WHERE id = ?').run(item.amount, item.to_player_id)
       db.prepare('UPDATE transactions SET is_reverted = 1, reverted_at = ? WHERE id = ?').run(currentTime, item.id)
     }
+
+    return getRoomState(room.id)
+  })
+}
+
+export function cancelTransactionUndo(code, transactionId, playerId) {
+  return transaction(() => {
+    const room = ensureRoom(code)
+    if (room.status !== 'playing') {
+      const error = new Error('只有进行中的房间可以取消撤销')
+      error.statusCode = 409
+      throw error
+    }
+
+    const actorId = Number(playerId)
+    const item = db.prepare(`
+      SELECT * FROM transactions
+      WHERE id = ? AND room_id = ? AND is_reverted = 0
+    `).get(Number(transactionId), room.id)
+
+    if (!item) {
+      const error = new Error('流水不存在或已撤销')
+      error.statusCode = 404
+      throw error
+    }
+
+    if (!item.undo_requested_at) {
+      const error = new Error('该流水没有待处理的撤销申请')
+      error.statusCode = 409
+      throw error
+    }
+
+    if (item.from_player_id !== actorId && item.to_player_id !== actorId) {
+      const error = new Error('只有该笔流水的双方可以取消撤销')
+      error.statusCode = 403
+      throw error
+    }
+
+    db.prepare(`
+      UPDATE transactions
+      SET
+        undo_requested_at = NULL,
+        undo_requested_by = NULL,
+        undo_from_confirmed_at = NULL,
+        undo_to_confirmed_at = NULL
+      WHERE id = ?
+    `).run(item.id)
 
     return getRoomState(room.id)
   })
