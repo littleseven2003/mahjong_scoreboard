@@ -102,7 +102,7 @@ web/src/views/
 - `transactions`：记分流水；
 - `settlements`：结束结算。
 
-数据库初始化逻辑在 `server/src/db.js`。第一版没有迁移系统，后续如果数据模型变复杂，应增加迁移机制。
+数据库初始化逻辑在 `server/src/db.js`。项目当前没有迁移系统，后续如果数据模型变复杂，应增加迁移机制。
 
 ## 实时同步原则
 

@@ -2,11 +2,11 @@
 
 中文名：麻将桌计分器。
 
-`mahjong_scoreboard` 是一个面向家庭娱乐麻将桌场景的轻量级实时计分与结算 Web 应用。第一版优先支持绿联云 NAS / Docker Compose 部署，用户在局域网内通过手机浏览器访问同一个房间，实时查看分数、流水和结算结果。
+`mahjong_scoreboard` 是一个面向家庭娱乐麻将桌场景的轻量级实时计分与结算 Web 应用。项目优先支持绿联云 NAS / Docker Compose 部署，用户在局域网内通过手机浏览器访问同一个房间，实时查看分数、流水和结算结果。
 
 ## 功能范围
 
-第一版已实现：
+当前已实现：
 
 - 创建三人或四人房间
 - 玩家通过房间号和昵称加入
@@ -19,7 +19,7 @@
 - 房主结束对局并生成结算
 - 查看历史对局和历史详情
 
-第一版暂不包含完整麻将规则、自动算番、用户登录、微信分享、公网访问、排行榜或金额支付能力。本项目只用于娱乐积分记录与结算辅助。
+当前不包含完整麻将规则、自动算番、用户登录、微信分享、公网访问、排行榜或金额支付能力。本项目只用于娱乐积分记录与结算辅助。
 
 ## 技术栈
 
@@ -81,7 +81,7 @@ mahjong_scoreboard/
 ├── docs/
 │   ├── api.md
 │   ├── deployment.md
-│   ├── design_v1.md
+│   ├── design.md
 │   ├── development.md
 │   └── usage.md
 ├── server/
@@ -99,7 +99,7 @@ mahjong_scoreboard/
 
 ## 文档
 
-- [设计文档 v1](docs/design_v1.md)
+- [设计文档](docs/design.md)
 - [使用说明](docs/usage.md)
 - [部署说明](docs/deployment.md)
 - [开发说明](docs/development.md)

@@ -1,6 +1,6 @@
 # API 概览
 
-本文档记录第一版后端 REST API 与 Socket.IO 事件。
+本文档记录后端 REST API 与 Socket.IO 事件。
 
 默认后端地址：
 
