@@ -23,6 +23,7 @@ export interface Player {
   currentScore: number
   joinedAt: string
   isOwner: boolean
+  isReady: boolean
 }
 
 export interface ScoreTransaction {
@@ -106,6 +107,24 @@ export const api = {
   },
   startGame(code: string, playerId: number) {
     return request<RoomState>(`/api/rooms/${code}/start`, {
+      method: 'POST',
+      body: JSON.stringify({ playerId })
+    })
+  },
+  setReady(code: string, playerId: number, isReady: boolean) {
+    return request<RoomState>(`/api/rooms/${code}/ready`, {
+      method: 'POST',
+      body: JSON.stringify({ playerId, isReady })
+    })
+  },
+  leaveRoom(code: string, playerId: number) {
+    return request<RoomState>(`/api/rooms/${code}/leave`, {
+      method: 'POST',
+      body: JSON.stringify({ playerId })
+    })
+  },
+  disbandRoom(code: string, playerId: number) {
+    return request<{ ok: true }>(`/api/rooms/${code}/disband`, {
       method: 'POST',
       body: JSON.stringify({ playerId })
     })

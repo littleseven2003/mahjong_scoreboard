@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api/client'
 import { useRoomStore } from '../stores/room'
@@ -16,7 +16,7 @@ const activeTransactions = computed(() => state.value?.transactions || [])
 const visibleTransactions = computed(() => activeTransactions.value)
 const dismissedUndoIds = ref<number[]>([])
 const undoDialogTransactionId = ref<number | null>(null)
-const roomFullNotified = ref(false)
+const allReadyNotified = ref(false)
 
 const transferForm = reactive({
   fromPlayerId: 0,
@@ -45,9 +45,19 @@ const selectedUndoTransaction = computed(() =>
 const pendingUndoForMe = computed(() =>
   activeTransactions.value.find((item) => shouldShowUndoDialog(item) && !dismissedUndoIds.value.includes(item.id)) || null
 )
+const nonOwnerPlayers = computed(() => players.value.filter((player) => !player.isOwner))
+const readyPlayers = computed(() => nonOwnerPlayers.value.filter((player) => player.isReady))
+const allNonOwnersReady = computed(() =>
+  nonOwnerPlayers.value.length > 0 && readyPlayers.value.length === nonOwnerPlayers.value.length
+)
 
 onMounted(() => {
   roomStore.loadRoom(code.value)
+  window.addEventListener('mahjong:room-disbanded', handleRoomDisbanded)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('mahjong:room-disbanded', handleRoomDisbanded)
 })
 
 watch(players, (nextPlayers) => {
@@ -82,18 +92,24 @@ watch(() => transferForm.toPlayerId, () => {
   }
 })
 
-watch([players, room, () => roomStore.isOwner], ([nextPlayers, nextRoom, isOwner]) => {
+watch([allNonOwnersReady, room, () => roomStore.isOwner], ([isReady, nextRoom, isOwner]) => {
   if (!nextRoom || nextRoom.status !== 'waiting' || !isOwner) return
 
-  if (nextPlayers.length >= nextRoom.playerCount && !roomFullNotified.value) {
-    roomFullNotified.value = true
-    window.alert('房间人数已满，可以开始对局了')
+  if (isReady && !allReadyNotified.value) {
+    allReadyNotified.value = true
+    window.alert('所有玩家已准备完毕，可以开始对局了')
   }
 
-  if (nextPlayers.length < nextRoom.playerCount) {
-    roomFullNotified.value = false
+  if (!isReady) {
+    allReadyNotified.value = false
   }
 })
+
+function handleRoomDisbanded(event: Event) {
+  const detail = (event as CustomEvent<{ message: string }>).detail
+  window.alert(detail?.message || '房间已解散')
+  router.push('/')
+}
 
 function playerDiff(score: number) {
   return score - (room.value?.initialScore || 0)
@@ -123,6 +139,28 @@ function ensurePlayer() {
 async function startGame() {
   if (!ensurePlayer()) return
   await roomStore.applyAction(() => api.startGame(code.value, roomStore.playerId!))
+}
+
+async function toggleReady() {
+  const currentPlayer = roomStore.currentPlayer
+  if (!ensurePlayer() || roomStore.isOwner || !currentPlayer) return
+  await roomStore.applyAction(() => api.setReady(code.value, roomStore.playerId!, !currentPlayer.isReady))
+}
+
+async function leaveRoom() {
+  if (!ensurePlayer()) return
+  if (!window.confirm('退出后当前昵称会释放，其他设备可以用这个昵称重新加入。确认退出？')) return
+  await roomStore.applyAction(() => api.leaveRoom(code.value, roomStore.playerId!))
+  roomStore.clearPlayerId(code.value)
+  router.push('/')
+}
+
+async function disbandRoom() {
+  if (!ensurePlayer() || !roomStore.isOwner) return
+  if (!window.confirm('解散房间会让所有玩家回到首页，确认解散？')) return
+  await api.disbandRoom(code.value, roomStore.playerId!)
+  roomStore.clearPlayerId(code.value)
+  router.push('/')
 }
 
 async function submitTransfer() {
@@ -242,16 +280,34 @@ async function finish() {
           <h2>等待开局</h2>
           <span>{{ players.length }} / {{ room.playerCount }}</span>
         </div>
-        <p v-if="players.length >= room.playerCount && roomStore.isOwner" class="notice-text">房间人数已满，可以开始对局了</p>
+        <p v-if="roomStore.isOwner && allNonOwnersReady" class="notice-text">所有玩家已准备完毕，可以开始对局了</p>
         <div class="list">
           <div v-for="player in players" :key="player.id" class="list-row">
             <span>{{ player.seatNo }} 位</span>
             <strong>{{ player.nickname }}</strong>
+            <small v-if="player.isOwner">房主</small>
+            <small v-else :class="{ ready: player.isReady }">{{ player.isReady ? '已准备' : '未准备' }}</small>
           </div>
         </div>
-        <button class="primary-button" :disabled="!roomStore.isOwner || roomStore.loading" @click="startGame">
+        <button
+          v-if="roomStore.isOwner"
+          class="primary-button"
+          :disabled="!allNonOwnersReady || roomStore.loading"
+          @click="startGame"
+        >
           开始对局
         </button>
+        <button v-if="roomStore.isOwner" class="secondary-button danger-outline" :disabled="roomStore.loading" @click="disbandRoom">
+          解散房间
+        </button>
+        <template v-else>
+          <button class="primary-button" :disabled="roomStore.loading" @click="toggleReady">
+            {{ roomStore.currentPlayer?.isReady ? '取消准备' : '准备' }}
+          </button>
+          <button class="secondary-button danger-outline" :disabled="roomStore.loading" @click="leaveRoom">
+            退出房间
+          </button>
+        </template>
       </section>
 
       <section v-if="room.status === 'playing'" class="panel">

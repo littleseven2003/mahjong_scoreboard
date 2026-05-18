@@ -417,6 +417,15 @@ button:disabled {
   color: #67786d;
 }
 
+.list-row small {
+  color: #8a6a13;
+  font-weight: 800;
+}
+
+.list-row small.ready {
+  color: #236f4e;
+}
+
 .history-item {
   min-height: 84px;
 }

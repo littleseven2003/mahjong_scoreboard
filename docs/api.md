@@ -146,6 +146,55 @@ POST /api/rooms/:code/start
 
 只有房主可以开始对局。
 
+## 准备或取消准备
+
+```http
+POST /api/rooms/:code/ready
+```
+
+请求：
+
+```json
+{
+  "playerId": 2,
+  "isReady": true
+}
+```
+
+只有等待阶段的非房主玩家可以准备或取消准备。
+
+## 退出等待房间
+
+```http
+POST /api/rooms/:code/leave
+```
+
+请求：
+
+```json
+{
+  "playerId": 2
+}
+```
+
+只有等待阶段的非房主玩家可以退出。退出后该玩家记录会被删除，对应昵称可以被其他设备重新使用。
+
+## 解散房间
+
+```http
+POST /api/rooms/:code/disband
+```
+
+请求：
+
+```json
+{
+  "playerId": 1
+}
+```
+
+只有房主可以在等待阶段解散房间。解散后，后端会通过 Socket.IO 广播 `room:disbanded`，所有在房间内的客户端收到提示并返回首页。
+
 ## 记分
 
 ```http

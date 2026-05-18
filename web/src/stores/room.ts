@@ -42,11 +42,28 @@ export const useRoomStore = defineStore('room', () => {
     connectedCode.value = normalized
     socket.emit('room:join', { roomCode: normalized })
     socket.off('room:sync')
+    socket.off('room:disbanded')
     socket.on('room:sync', (nextState: RoomState) => {
       if (nextState.room.code === connectedCode.value) {
         state.value = nextState
       }
     })
+    socket.on('room:disbanded', ({ roomCode, message }: { roomCode: string; message: string }) => {
+      if (String(roomCode).toUpperCase() !== connectedCode.value) return
+
+      localStorage.removeItem(`${PLAYER_KEY_PREFIX}${connectedCode.value}`)
+      state.value = null
+      playerId.value = null
+      connectedCode.value = ''
+      window.dispatchEvent(new CustomEvent('mahjong:room-disbanded', {
+        detail: { roomCode, message }
+      }))
+    })
+  }
+
+  function clearPlayerId(code: string) {
+    localStorage.removeItem(`${PLAYER_KEY_PREFIX}${code.toUpperCase()}`)
+    playerId.value = null
   }
 
   async function createRoom(payload: Parameters<typeof api.createRoom>[0]) {
@@ -120,6 +137,7 @@ export const useRoomStore = defineStore('room', () => {
     createRoom,
     joinRoom,
     loadRoom,
-    applyAction
+    applyAction,
+    clearPlayerId
   }
 })

@@ -5,11 +5,14 @@ import {
   cancelTransactionUndo,
   confirmTransactionUndo,
   createRoom,
+  disbandWaitingRoom,
   finishGame,
   getHistoryDetail,
   getRoomState,
   joinRoom,
   listHistory,
+  leaveWaitingRoom,
+  setPlayerReady,
   startGame,
   transferScore
 } from './service.js'
@@ -86,6 +89,39 @@ app.post('/api/rooms/:code/start', async (request, reply) => {
     const state = startGame(request.params.code, request.body?.playerId)
     broadcastRoom(state)
     reply.send(state)
+  } catch (error) {
+    sendError(reply, error)
+  }
+})
+
+app.post('/api/rooms/:code/ready', async (request, reply) => {
+  try {
+    const state = setPlayerReady(request.params.code, request.body?.playerId, request.body?.isReady)
+    broadcastRoom(state)
+    reply.send(state)
+  } catch (error) {
+    sendError(reply, error)
+  }
+})
+
+app.post('/api/rooms/:code/leave', async (request, reply) => {
+  try {
+    const state = leaveWaitingRoom(request.params.code, request.body?.playerId)
+    broadcastRoom(state)
+    reply.send(state)
+  } catch (error) {
+    sendError(reply, error)
+  }
+})
+
+app.post('/api/rooms/:code/disband', async (request, reply) => {
+  try {
+    const result = disbandWaitingRoom(request.params.code, request.body?.playerId)
+    io.to(roomChannel(result.roomCode)).emit('room:disbanded', {
+      roomCode: result.roomCode,
+      message: '房间已解散'
+    })
+    reply.send({ ok: true })
   } catch (error) {
     sendError(reply, error)
   }

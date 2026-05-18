@@ -40,6 +40,7 @@ db.exec(`
     current_score INTEGER NOT NULL,
     joined_at TEXT NOT NULL,
     is_owner INTEGER NOT NULL DEFAULT 0,
+    is_ready INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
   );
 
@@ -93,6 +94,7 @@ addColumnIfMissing('transactions', 'undo_requested_at', 'TEXT')
 addColumnIfMissing('transactions', 'undo_requested_by', 'INTEGER')
 addColumnIfMissing('transactions', 'undo_from_confirmed_at', 'TEXT')
 addColumnIfMissing('transactions', 'undo_to_confirmed_at', 'TEXT')
+addColumnIfMissing('players', 'is_ready', 'INTEGER NOT NULL DEFAULT 0')
 
 export function now() {
   return new Date().toISOString()

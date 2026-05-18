@@ -27,7 +27,8 @@ function rowToPlayer(row) {
     seatNo: row.seat_no,
     currentScore: row.current_score,
     joinedAt: row.joined_at,
-    isOwner: Boolean(row.is_owner)
+    isOwner: Boolean(row.is_owner),
+    isReady: Boolean(row.is_ready)
   }
 }
 
@@ -99,6 +100,18 @@ function assertNickname(nickname) {
     throw error
   }
   return value
+}
+
+function getNextSeatNo(roomId, playerCount) {
+  const usedSeats = new Set(
+    db.prepare('SELECT seat_no FROM players WHERE room_id = ?').all(roomId).map((row) => row.seat_no)
+  )
+
+  for (let seatNo = 1; seatNo <= playerCount; seatNo += 1) {
+    if (!usedSeats.has(seatNo)) return seatNo
+  }
+
+  return playerCount
 }
 
 function readTransactions(roomId) {
@@ -257,13 +270,82 @@ export function joinRoom(code, payload) {
     }
 
     const result = db.prepare(`
-      INSERT INTO players (room_id, nickname, seat_no, current_score, joined_at, is_owner)
-      VALUES (?, ?, ?, ?, ?, 0)
-    `).run(room.id, nickname, currentPlayers + 1, room.initial_score, now())
+      INSERT INTO players (room_id, nickname, seat_no, current_score, joined_at, is_owner, is_ready)
+      VALUES (?, ?, ?, ?, ?, 0, 0)
+    `).run(room.id, nickname, getNextSeatNo(room.id, room.player_count), room.initial_score, now())
 
     return {
       state: getRoomState(room.id),
       playerId: Number(result.lastInsertRowid)
+    }
+  })
+}
+
+export function setPlayerReady(code, playerId, isReady) {
+  return transaction(() => {
+    const room = ensureRoom(code)
+    if (room.status !== 'waiting') {
+      const error = new Error('只有等待中的房间可以准备')
+      error.statusCode = 409
+      throw error
+    }
+
+    const player = getPlayerRow(Number(playerId), room.id)
+    if (!player) {
+      const error = new Error('玩家不存在或不属于该房间')
+      error.statusCode = 400
+      throw error
+    }
+    if (player.is_owner) {
+      const error = new Error('房主不需要准备')
+      error.statusCode = 400
+      throw error
+    }
+
+    db.prepare('UPDATE players SET is_ready = ? WHERE id = ?').run(isReady ? 1 : 0, player.id)
+    return getRoomState(room.id)
+  })
+}
+
+export function leaveWaitingRoom(code, playerId) {
+  return transaction(() => {
+    const room = ensureRoom(code)
+    if (room.status !== 'waiting') {
+      const error = new Error('对局已开始，无法退出等待房间')
+      error.statusCode = 409
+      throw error
+    }
+
+    const player = getPlayerRow(Number(playerId), room.id)
+    if (!player) {
+      const error = new Error('玩家不存在或不属于该房间')
+      error.statusCode = 400
+      throw error
+    }
+    if (player.is_owner) {
+      const error = new Error('房主请使用解散房间')
+      error.statusCode = 400
+      throw error
+    }
+
+    db.prepare('DELETE FROM players WHERE id = ?').run(player.id)
+    return getRoomState(room.id)
+  })
+}
+
+export function disbandWaitingRoom(code, playerId) {
+  return transaction(() => {
+    const room = ensureRoom(code)
+    ensureOwner(room.id, playerId)
+    if (room.status !== 'waiting') {
+      const error = new Error('只有等待中的房间可以解散')
+      error.statusCode = 409
+      throw error
+    }
+
+    db.prepare('DELETE FROM rooms WHERE id = ?').run(room.id)
+    return {
+      roomCode: room.room_code
     }
   })
 }
@@ -283,6 +365,17 @@ export function startGame(code, playerId) {
     if (playerTotal < 2) {
       const error = new Error('至少需要 2 名玩家才能开始')
       error.statusCode = 400
+      throw error
+    }
+
+    const unreadyPlayers = db.prepare(`
+      SELECT COUNT(*) AS count
+      FROM players
+      WHERE room_id = ? AND is_owner = 0 AND is_ready = 0
+    `).get(room.id).count
+    if (unreadyPlayers > 0) {
+      const error = new Error('仍有玩家未准备')
+      error.statusCode = 409
       throw error
     }
 
