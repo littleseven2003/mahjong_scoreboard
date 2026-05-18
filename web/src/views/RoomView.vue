@@ -16,6 +16,7 @@ const activeTransactions = computed(() => state.value?.transactions || [])
 const visibleTransactions = computed(() => activeTransactions.value)
 const dismissedUndoIds = ref<number[]>([])
 const undoDialogTransactionId = ref<number | null>(null)
+const roomFullNotified = ref(false)
 
 const transferForm = reactive({
   fromPlayerId: 0,
@@ -78,6 +79,19 @@ watch(() => transferForm.fromPlayerId, () => {
 watch(() => transferForm.toPlayerId, () => {
   if (transferForm.fromPlayerId === transferForm.toPlayerId) {
     transferForm.fromPlayerId = fromOptions.value[0]?.id || 0
+  }
+})
+
+watch([players, room, () => roomStore.isOwner], ([nextPlayers, nextRoom, isOwner]) => {
+  if (!nextRoom || nextRoom.status !== 'waiting' || !isOwner) return
+
+  if (nextPlayers.length >= nextRoom.playerCount && !roomFullNotified.value) {
+    roomFullNotified.value = true
+    window.alert('房间人数已满，可以开始对局了')
+  }
+
+  if (nextPlayers.length < nextRoom.playerCount) {
+    roomFullNotified.value = false
   }
 })
 
@@ -228,6 +242,7 @@ async function finish() {
           <h2>等待开局</h2>
           <span>{{ players.length }} / {{ room.playerCount }}</span>
         </div>
+        <p v-if="players.length >= room.playerCount && roomStore.isOwner" class="notice-text">房间人数已满，可以开始对局了</p>
         <div class="list">
           <div v-for="player in players" :key="player.id" class="list-row">
             <span>{{ player.seatNo }} 位</span>
@@ -297,7 +312,7 @@ async function finish() {
         <div v-else class="timeline">
           <article v-for="item in visibleTransactions" :key="item.id" :class="{ reverted: item.isReverted, pending: item.undoRequestedAt && !item.isReverted }">
             <div class="timeline-main">
-            <strong>{{ item.fromNickname }} 扣 {{ item.amount }} 分，{{ item.toNickname }} 加 {{ item.amount }} 分</strong>
+              <strong>{{ item.fromNickname }} 扣 {{ item.amount }} 分，{{ item.toNickname }} 加 {{ item.amount }} 分</strong>
               <span>{{ item.remark || '无备注' }}</span>
               <small>{{ undoStatus(item) }}</small>
             </div>

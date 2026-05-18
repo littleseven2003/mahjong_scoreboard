@@ -81,6 +81,66 @@ h2 {
   font-size: 20px;
 }
 
+.home-hero {
+  display: grid;
+  gap: 22px;
+  padding: 18px 0 20px;
+}
+
+.app-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.app-logo svg {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 auto;
+}
+
+.app-logo rect {
+  fill: #173f32;
+}
+
+.app-logo path {
+  fill: none;
+  stroke: #f5d17b;
+  stroke-linecap: round;
+  stroke-width: 4;
+}
+
+.app-logo circle {
+  fill: #ffffff;
+}
+
+.app-logo strong,
+.app-logo span {
+  display: block;
+}
+
+.app-logo strong {
+  font-size: 30px;
+  line-height: 1.1;
+}
+
+.app-logo span {
+  margin-top: 6px;
+  color: #577062;
+  font-weight: 800;
+}
+
+.home-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.home-actions .ghost-button {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
 .panel {
   padding: 16px;
   margin-bottom: 14px;
@@ -450,6 +510,7 @@ button:disabled {
 
 .empty,
 .muted,
+.notice-text,
 .error-text {
   padding: 14px;
   border-radius: 8px;
@@ -459,6 +520,13 @@ button:disabled {
 .muted {
   background: rgba(255, 255, 255, 0.74);
   color: #67786d;
+}
+
+.notice-text {
+  margin: 12px 0 0;
+  background: #ecf8ef;
+  color: #236f4e;
+  font-weight: 800;
 }
 
 .error-text {
@@ -475,6 +543,14 @@ button:disabled {
 
   h1 {
     font-size: 26px;
+  }
+
+  .home-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .app-logo strong {
+    font-size: 24px;
   }
 
   .grid.two {
