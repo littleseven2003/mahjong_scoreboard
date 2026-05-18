@@ -37,6 +37,10 @@ const transferForm = reactive({
   amount: 10,
   remark: ''
 })
+const transferErrors = reactive({
+  amount: '',
+  players: ''
+})
 
 const quickAmounts = [1, 2, 5, 10, 20, 50, 100]
 
@@ -95,12 +99,14 @@ watch(pendingUndoForMe, (item) => {
 })
 
 watch(() => transferForm.fromPlayerId, () => {
+  transferErrors.players = ''
   if (transferForm.toPlayerId === transferForm.fromPlayerId) {
     transferForm.toPlayerId = toOptions.value[0]?.id || 0
   }
 })
 
 watch(() => transferForm.toPlayerId, () => {
+  transferErrors.players = ''
   if (transferForm.fromPlayerId === transferForm.toPlayerId) {
     transferForm.fromPlayerId = fromOptions.value[0]?.id || 0
   }
@@ -234,6 +240,20 @@ async function disbandRoom() {
 
 async function submitTransfer() {
   if (!ensurePlayer()) return
+  transferErrors.amount = ''
+  transferErrors.players = ''
+
+  if (!transferForm.fromPlayerId || !transferForm.toPlayerId || transferForm.fromPlayerId === transferForm.toPlayerId) {
+    transferErrors.players = '请选择不同的扣分玩家和加分玩家'
+    return
+  }
+
+  const amount = Number(transferForm.amount)
+  if (!Number.isInteger(amount) || amount <= 0) {
+    transferErrors.amount = '分数必须是正整数'
+    return
+  }
+
   await roomStore.applyAction(() => api.transferScore(code.value, {
     ...transferForm,
     createdBy: roomStore.playerId
@@ -246,10 +266,12 @@ function playerOptionLabel(player: { id: number; nickname: string }) {
 }
 
 function addQuickAmount(amount: number) {
+  transferErrors.amount = ''
   transferForm.amount = Math.max(0, Number(transferForm.amount || 0) + amount)
 }
 
 function clearAmount() {
+  transferErrors.amount = ''
   transferForm.amount = 0
 }
 
@@ -404,9 +426,11 @@ async function finish() {
             </select>
           </label>
         </div>
+        <small v-if="transferErrors.players" class="field-error form-error">{{ transferErrors.players }}</small>
         <label>
           分数
-          <input v-model.number="transferForm.amount" type="number" min="1" />
+          <input v-model.number="transferForm.amount" type="number" min="1" @input="transferErrors.amount = ''" />
+          <small v-if="transferErrors.amount" class="field-error">{{ transferErrors.amount }}</small>
         </label>
         <div class="quick-grid">
           <button type="button" @click="clearAmount">清零</button>

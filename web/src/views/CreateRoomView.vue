@@ -70,6 +70,10 @@ async function createRoom() {
     </header>
 
     <section class="panel">
+      <div class="section-title">
+        <h2>房间设置</h2>
+        <span>房主自动入座</span>
+      </div>
       <div class="segmented">
         <button :class="{ active: createForm.playerCount === 3 }" @click="createForm.playerCount = 3">三人</button>
         <button :class="{ active: createForm.playerCount === 4 }" @click="createForm.playerCount = 4">四人</button>

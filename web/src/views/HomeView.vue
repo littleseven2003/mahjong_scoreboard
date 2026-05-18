@@ -4,6 +4,8 @@ import { api, type RoomState } from '../api/client'
 import AppLogo from '../components/AppLogo.vue'
 
 const CONTINUE_TIMEOUT_MS = 12 * 60 * 60 * 1000
+const githubUrl = 'https://github.com/littleseven2003/mahjong_scoreboard'
+const author = 'littleseven2003'
 
 type ContinueRoom = {
   state: RoomState
@@ -15,30 +17,34 @@ const continueLoading = ref(false)
 
 async function loadContinuableRooms() {
   continueLoading.value = true
-  const pairs = Object.keys(localStorage)
-    .filter((key) => key.startsWith('mahjong_scoreboard_player_'))
-    .map((key) => ({
-      code: key.replace('mahjong_scoreboard_player_', ''),
-      playerId: Number(localStorage.getItem(key))
+  try {
+    const pairs = Object.keys(localStorage)
+      .filter((key) => key.startsWith('mahjong_scoreboard_player_'))
+      .map((key) => ({
+        code: key.replace('mahjong_scoreboard_player_', ''),
+        playerId: Number(localStorage.getItem(key))
+      }))
+      .filter((pair) => pair.code && Number.isInteger(pair.playerId))
+
+    const results = await Promise.allSettled(pairs.map(async ({ code, playerId }) => {
+      const roomState = await api.getRoom(code)
+      const isCurrentPlayer = roomState.players.some((player) => player.id === playerId)
+      if (!isCurrentPlayer || roomState.room.status === 'finished') return null
+
+      const lastActiveAt = roomState.room.startedAt || roomState.room.createdAt
+      const isExpired = Date.now() - new Date(lastActiveAt).getTime() > CONTINUE_TIMEOUT_MS
+      return {
+        state: roomState,
+        isExpired
+      }
     }))
 
-  const results = await Promise.allSettled(pairs.map(async ({ code, playerId }) => {
-    const roomState = await api.getRoom(code)
-    const isCurrentPlayer = roomState.players.some((player) => player.id === playerId)
-    if (!isCurrentPlayer || roomState.room.status === 'finished') return null
-
-    const lastActiveAt = roomState.room.startedAt || roomState.room.createdAt
-    const isExpired = Date.now() - new Date(lastActiveAt).getTime() > CONTINUE_TIMEOUT_MS
-    return {
-      state: roomState,
-      isExpired
-    }
-  }))
-
-  continuableRooms.value = results
-    .map((result) => result.status === 'fulfilled' ? result.value : null)
-    .filter((roomState): roomState is ContinueRoom => Boolean(roomState))
-  continueLoading.value = false
+    continuableRooms.value = results
+      .map((result) => result.status === 'fulfilled' ? result.value : null)
+      .filter((roomState): roomState is ContinueRoom => Boolean(roomState))
+  } finally {
+    continueLoading.value = false
+  }
 }
 
 function removeContinueRoom(code: string) {
@@ -55,6 +61,7 @@ onMounted(() => {
   <main class="app-shell">
     <header class="home-hero">
       <AppLogo />
+      <p class="home-subtitle">为线下麻将桌准备的轻量记分工具，支持创建房间、加入对局、准备开局、流水撤销和历史结算。</p>
       <div class="home-actions">
         <RouterLink class="primary-button" to="/room/create">创建房间</RouterLink>
         <RouterLink class="secondary-button" to="/room/join">加入房间</RouterLink>
@@ -85,10 +92,15 @@ onMounted(() => {
             type="button"
             @click="removeContinueRoom(item.state.room.code)"
           >
-            删除
+            移除
           </button>
         </div>
       </div>
     </section>
+
+    <footer class="project-footer">
+      <a :href="githubUrl" target="_blank" rel="noreferrer">GitHub：{{ githubUrl }}</a>
+      <span>作者：{{ author }}</span>
+    </footer>
   </main>
 </template>

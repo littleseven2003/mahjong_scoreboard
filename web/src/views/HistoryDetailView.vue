@@ -46,7 +46,7 @@ onMounted(async () => {
         <div v-if="!state.transactions.length" class="empty">暂无流水</div>
         <div v-else class="timeline">
           <article v-for="item in state.transactions" :key="item.id" :class="{ reverted: item.isReverted }">
-            <strong>{{ item.fromNickname }} 给 {{ item.toNickname }} {{ item.amount }} 分</strong>
+            <strong>{{ item.fromNickname }} 扣 {{ item.amount }} 分，{{ item.toNickname }} 加 {{ item.amount }} 分</strong>
             <span>{{ item.remark || '无备注' }}</span>
           </article>
         </div>

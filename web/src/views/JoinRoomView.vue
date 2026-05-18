@@ -54,6 +54,10 @@ async function joinRoom() {
     </header>
 
     <section class="panel">
+      <div class="section-title">
+        <h2>进入房间</h2>
+        <span>等待房间可加入</span>
+      </div>
       <label>
         房间号
         <input v-model.trim="joinCode" maxlength="6" placeholder="例如 A2B3C4" class="code-input" @input="joinErrors.code = ''" />
