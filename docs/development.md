@@ -88,7 +88,9 @@ web/src/views/
 
 负责页面视图：
 
-- `HomeView.vue`：创建房间、加入房间；
+- `HomeView.vue`：首页入口、继续对局、项目信息；
+- `CreateRoomView.vue`：创建房间；
+- `JoinRoomView.vue`：加入房间；
 - `RoomView.vue`：等待、记分、结算；
 - `HistoryView.vue`：历史列表；
 - `HistoryDetailView.vue`：历史详情。

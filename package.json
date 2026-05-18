@@ -2,7 +2,8 @@
   "name": "mahjong_scoreboard",
   "version": "0.1.0",
   "private": true,
-  "description": "麻将桌计分器：NAS Docker 部署的轻量实时麻将记分与结算工具",
+  "description": "麻将桌计分器：Docker 部署的轻量实时麻将记分与结算工具",
+  "license": "GPL-3.0-only",
   "workspaces": [
     "server",
     "web"

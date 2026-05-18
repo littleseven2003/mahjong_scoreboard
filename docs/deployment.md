@@ -1,6 +1,6 @@
 # 部署说明
 
-本文档说明如何在本地或 NAS Docker 环境部署“麻将桌计分器”。
+本文档说明如何在本地或 Docker 环境部署“麻将桌计分器”。
 
 ## 环境要求
 
@@ -14,7 +14,7 @@ Docker 部署：
 - Docker；
 - Docker Compose。
 
-后端当前使用 Node.js 24 内置的 `node:sqlite` 模块。该模块在 Node.js 24 中仍会显示实验性提示，但可以减少额外 SQLite 原生依赖，降低 NAS 部署复杂度。
+后端当前使用 Node.js 24 内置的 `node:sqlite` 模块。该模块在 Node.js 24 中仍会显示实验性提示，但可以减少额外 SQLite 原生依赖，降低部署复杂度。
 
 ## Docker Compose 部署
 
@@ -33,7 +33,7 @@ docker compose up -d --build
 部署后访问：
 
 ```text
-http://NAS局域网IP:8899
+http://服务器局域网IP:8899
 ```
 
 ## 端口说明
@@ -60,7 +60,7 @@ server/data/mahjong.db
 
 该目录已在 Compose 中挂载，容器重建不会删除历史数据。
 
-建议在 NAS 上定期备份：
+建议定期备份：
 
 ```text
 server/data/
@@ -101,21 +101,5 @@ docker compose down
 ```
 
 不要手动删除 `server/data/`，除非确认不再需要历史对局。
-
-## 绿联云 NAS 使用建议
-
-建议目录类似：
-
-```text
-/volume1/docker/mahjong_scoreboard
-```
-
-部署思路：
-
-1. 把项目放到 NAS 的 Docker 应用目录。
-2. 进入项目根目录。
-3. 执行 `docker compose up -d --build`。
-4. 手机连接同一局域网。
-5. 访问 `http://NAS局域网IP:8899`。
 
 项目建议只在局域网内使用。公网访问、HTTPS、反向代理、内网穿透和权限控制可在后续单独设计。

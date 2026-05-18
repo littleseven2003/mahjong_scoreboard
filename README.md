@@ -2,7 +2,7 @@
 
 中文名：麻将桌计分器。
 
-`mahjong_scoreboard` 是一个面向家庭娱乐麻将桌场景的轻量级实时计分与结算 Web 应用。项目优先支持绿联云 NAS / Docker Compose 部署，用户在局域网内通过手机浏览器访问同一个房间，实时查看分数、流水和结算结果。
+`mahjong_scoreboard` 是一个面向家庭娱乐麻将桌场景的轻量级实时计分与结算 Web 应用。项目支持 Docker Compose 部署，用户在局域网内通过手机浏览器访问同一个房间，实时查看分数、流水和结算结果。
 
 ## 功能范围
 
@@ -73,7 +73,7 @@ docker compose up -d --build
 部署后访问：
 
 ```text
-http://NAS局域网IP:8899
+http://服务器局域网IP:8899
 ```
 
 ## 项目结构
@@ -95,6 +95,7 @@ mahjong_scoreboard/
 │   ├── nginx/
 │   └── Dockerfile
 ├── docker-compose.yml
+├── LICENSE
 ├── package.json
 └── README.md
 ```
@@ -106,6 +107,10 @@ mahjong_scoreboard/
 - [部署说明](docs/deployment.md)
 - [开发说明](docs/development.md)
 - [API 概览](docs/api.md)
+
+## 开源协议
+
+本项目使用 [GNU General Public License v3.0](LICENSE) 开源。
 
 ## 提交规范
 
