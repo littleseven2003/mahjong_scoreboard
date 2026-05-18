@@ -17,6 +17,19 @@ const visibleTransactions = computed(() => activeTransactions.value)
 const dismissedUndoIds = ref<number[]>([])
 const undoDialogTransactionId = ref<number | null>(null)
 const allReadyNotified = ref(false)
+type PromptDialog = {
+  title: string
+  message: string
+  confirmText: string
+  cancelText?: string
+  closeText?: string
+  danger?: boolean
+  onConfirm: () => void | Promise<void>
+  onCancel?: () => void | Promise<void>
+  onClose?: () => void
+}
+
+const promptDialog = ref<PromptDialog | null>(null)
 
 const transferForm = reactive({
   fromPlayerId: 0,
@@ -47,8 +60,9 @@ const pendingUndoForMe = computed(() =>
 )
 const nonOwnerPlayers = computed(() => players.value.filter((player) => !player.isOwner))
 const readyPlayers = computed(() => nonOwnerPlayers.value.filter((player) => player.isReady))
+const roomIsFull = computed(() => Boolean(room.value && players.value.length >= room.value.playerCount))
 const allNonOwnersReady = computed(() =>
-  nonOwnerPlayers.value.length > 0 && readyPlayers.value.length === nonOwnerPlayers.value.length
+  roomIsFull.value && nonOwnerPlayers.value.length > 0 && readyPlayers.value.length === nonOwnerPlayers.value.length
 )
 
 onMounted(() => {
@@ -97,7 +111,7 @@ watch([allNonOwnersReady, room, () => roomStore.isOwner], ([isReady, nextRoom, i
 
   if (isReady && !allReadyNotified.value) {
     allReadyNotified.value = true
-    window.alert('所有玩家已准备完毕，可以开始对局了')
+    openNotice('准备完成', '所有玩家已准备完毕，可以开始对局了')
   }
 
   if (!isReady) {
@@ -107,8 +121,47 @@ watch([allNonOwnersReady, room, () => roomStore.isOwner], ([isReady, nextRoom, i
 
 function handleRoomDisbanded(event: Event) {
   const detail = (event as CustomEvent<{ message: string }>).detail
-  window.alert(detail?.message || '房间已解散')
-  router.push('/')
+  openNotice('房间已解散', detail?.message || '房间已解散', () => {
+    router.push('/')
+  })
+}
+
+function openNotice(title: string, message: string, onConfirm?: () => void) {
+  promptDialog.value = {
+    title,
+    message,
+    confirmText: '知道了',
+    onConfirm: () => {
+      promptDialog.value = null
+      onConfirm?.()
+    }
+  }
+}
+
+function openConfirm(options: Omit<PromptDialog, 'onClose'>) {
+  promptDialog.value = {
+    ...options,
+    onCancel: async () => {
+      if (options.onCancel) await options.onCancel()
+      promptDialog.value = null
+    }
+  }
+}
+
+async function confirmPrompt() {
+  const dialog = promptDialog.value
+  if (!dialog) return
+  await dialog.onConfirm()
+  promptDialog.value = null
+}
+
+async function cancelPrompt() {
+  const dialog = promptDialog.value
+  if (!dialog?.onCancel) {
+    promptDialog.value = null
+    return
+  }
+  await dialog.onCancel()
 }
 
 function playerDiff(score: number) {
@@ -149,18 +202,34 @@ async function toggleReady() {
 
 async function leaveRoom() {
   if (!ensurePlayer()) return
-  if (!window.confirm('退出后当前昵称会释放，其他设备可以用这个昵称重新加入。确认退出？')) return
-  await roomStore.applyAction(() => api.leaveRoom(code.value, roomStore.playerId!))
-  roomStore.clearPlayerId(code.value)
-  router.push('/')
+  openConfirm({
+    title: '退出房间',
+    message: '退出后当前昵称会释放，其他设备可以用这个昵称重新加入。',
+    confirmText: '确认退出',
+    cancelText: '暂不退出',
+    danger: true,
+    onConfirm: async () => {
+      await roomStore.applyAction(() => api.leaveRoom(code.value, roomStore.playerId!))
+      roomStore.clearPlayerId(code.value)
+      router.push('/')
+    }
+  })
 }
 
 async function disbandRoom() {
   if (!ensurePlayer() || !roomStore.isOwner) return
-  if (!window.confirm('解散房间会让所有玩家回到首页，确认解散？')) return
-  await api.disbandRoom(code.value, roomStore.playerId!)
-  roomStore.clearPlayerId(code.value)
-  router.push('/')
+  openConfirm({
+    title: '解散房间',
+    message: '解散房间会让所有玩家收到提示并回到首页。',
+    confirmText: '确认解散',
+    cancelText: '暂不解散',
+    danger: true,
+    onConfirm: async () => {
+      await api.disbandRoom(code.value, roomStore.playerId!)
+      roomStore.clearPlayerId(code.value)
+      router.push('/')
+    }
+  })
 }
 
 async function submitTransfer() {
@@ -244,8 +313,15 @@ async function cancelUndo(transactionId: number) {
 
 async function finish() {
   if (!ensurePlayer()) return
-  if (!window.confirm('结束对局并生成结算？')) return
-  await roomStore.applyAction(() => api.finish(code.value, roomStore.playerId!))
+  openConfirm({
+    title: '结束结算',
+    message: '结束后会生成最终结算，房间进入已结束状态。',
+    confirmText: '确认结束',
+    cancelText: '继续记分',
+    onConfirm: async () => {
+      await roomStore.applyAction(() => api.finish(code.value, roomStore.playerId!))
+    }
+  })
 }
 </script>
 
@@ -407,5 +483,18 @@ async function finish() {
         </section>
       </div>
     </template>
+
+    <div v-if="promptDialog" class="modal-backdrop">
+      <section class="modal-panel">
+        <h2>{{ promptDialog.title }}</h2>
+        <p class="modal-message">{{ promptDialog.message }}</p>
+        <button class="primary-button" :class="{ 'danger-fill': promptDialog.danger }" :disabled="roomStore.loading" @click="confirmPrompt">
+          {{ promptDialog.confirmText }}
+        </button>
+        <button v-if="promptDialog.cancelText" class="secondary-button" :disabled="roomStore.loading" @click="cancelPrompt">
+          {{ promptDialog.cancelText }}
+        </button>
+      </section>
+    </div>
   </main>
 </template>

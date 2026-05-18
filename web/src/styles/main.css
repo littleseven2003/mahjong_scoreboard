@@ -284,6 +284,10 @@ select:focus {
   color: #ffffff;
 }
 
+.primary-button.danger-fill {
+  background: #ad3131;
+}
+
 .secondary-button {
   border: 1px solid #236f4e;
   background: #ffffff;
@@ -523,6 +527,12 @@ button:disabled {
 .modal-close {
   width: 100%;
   margin-top: 12px;
+}
+
+.modal-message {
+  margin: 14px 0 0;
+  color: #34483b;
+  line-height: 1.6;
 }
 
 .empty,

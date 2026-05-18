@@ -362,8 +362,8 @@ export function startGame(code, playerId) {
     }
 
     const playerTotal = db.prepare('SELECT COUNT(*) AS count FROM players WHERE room_id = ?').get(room.id).count
-    if (playerTotal < 2) {
-      const error = new Error('至少需要 2 名玩家才能开始')
+    if (playerTotal < room.player_count) {
+      const error = new Error('房间人数未满，无法开始对局')
       error.statusCode = 400
       throw error
     }
