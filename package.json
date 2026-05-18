@@ -1,0 +1,20 @@
+{
+  "name": "mahjong_scoreboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "麻将桌计分器：NAS Docker 部署的轻量实时麻将记分与结算工具",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace server",
+    "dev:web": "npm run dev --workspace web",
+    "dev:server": "npm run dev --workspace server",
+    "build": "npm run build --workspace web",
+    "start": "npm run start --workspace server"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

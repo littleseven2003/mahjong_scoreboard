@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log
+dist
+build
+.DS_Store
+.git
+server/data/*.db
+server/data/*.sqlite
+server/data/*.sqlite3
