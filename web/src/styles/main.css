@@ -361,6 +361,22 @@ button:disabled {
   min-height: 84px;
 }
 
+.continue-item {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.continue-item.expired {
+  border-color: #e6c65d;
+  background: #fffaf0;
+}
+
+.continue-link {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
 .timeline article.reverted {
   opacity: 0.52;
 }
@@ -470,6 +486,10 @@ button:disabled {
   }
 
   .timeline article {
+    grid-template-columns: 1fr;
+  }
+
+  .continue-item {
     grid-template-columns: 1fr;
   }
 

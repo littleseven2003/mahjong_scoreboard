@@ -18,7 +18,13 @@ const createForm = reactive({
 
 const joinCode = ref('')
 const joinNickname = ref('')
-const continuableRooms = ref<RoomState[]>([])
+const CONTINUE_TIMEOUT_MS = 12 * 60 * 60 * 1000
+type ContinueRoom = {
+  state: RoomState
+  isExpired: boolean
+}
+
+const continuableRooms = ref<ContinueRoom[]>([])
 const continueLoading = ref(false)
 
 const createErrors = reactive({
@@ -109,13 +115,25 @@ async function loadContinuableRooms() {
   const results = await Promise.allSettled(pairs.map(async ({ code, playerId }) => {
     const roomState = await api.getRoom(code)
     const isCurrentPlayer = roomState.players.some((player) => player.id === playerId)
-    return isCurrentPlayer && roomState.room.status !== 'finished' ? roomState : null
+    if (!isCurrentPlayer || roomState.room.status === 'finished') return null
+
+    const lastActiveAt = roomState.room.startedAt || roomState.room.createdAt
+    const isExpired = Date.now() - new Date(lastActiveAt).getTime() > CONTINUE_TIMEOUT_MS
+    return {
+      state: roomState,
+      isExpired
+    }
   }))
 
   continuableRooms.value = results
     .map((result) => result.status === 'fulfilled' ? result.value : null)
-    .filter((roomState): roomState is RoomState => Boolean(roomState))
+    .filter((roomState): roomState is ContinueRoom => Boolean(roomState))
   continueLoading.value = false
+}
+
+function removeContinueRoom(code: string) {
+  localStorage.removeItem(`mahjong_scoreboard_player_${code.toUpperCase()}`)
+  continuableRooms.value = continuableRooms.value.filter((item) => item.state.room.code !== code)
 }
 
 onMounted(() => {
@@ -139,20 +157,31 @@ onMounted(() => {
         <span v-if="continueLoading">检查中</span>
       </div>
       <div v-if="continuableRooms.length" class="history-list">
-        <RouterLink v-for="item in continuableRooms" :key="item.room.code" class="history-item" :to="`/room/${item.room.code}`">
-          <strong>{{ item.room.name || item.room.code }}</strong>
-          <span>{{ item.players.map((player) => player.nickname).join('、') }}</span>
-          <small>{{ item.room.status === 'waiting' ? '等待开局' : '进行中' }}</small>
-        </RouterLink>
+        <div v-for="item in continuableRooms" :key="item.state.room.code" class="history-item continue-item" :class="{ expired: item.isExpired }">
+          <RouterLink v-if="!item.isExpired" class="continue-link" :to="`/room/${item.state.room.code}`">
+            <strong>{{ item.state.room.name || item.state.room.code }}</strong>
+            <span>{{ item.state.players.map((player) => player.nickname).join('、') }}</span>
+            <small>{{ item.state.room.status === 'waiting' ? '等待开局' : '进行中' }}</small>
+          </RouterLink>
+          <div v-else class="continue-link">
+            <strong>{{ item.state.room.name || item.state.room.code }}</strong>
+            <span>{{ item.state.players.map((player) => player.nickname).join('、') }}</span>
+            <small>已超时</small>
+          </div>
+          <button
+            v-if="item.isExpired"
+            class="ghost-button danger compact-button"
+            type="button"
+            @click="removeContinueRoom(item.state.room.code)"
+          >
+            删除
+          </button>
+        </div>
       </div>
     </section>
 
     <section class="panel">
       <h2>创建房间</h2>
-      <div class="segmented">
-        <button :class="{ active: createForm.playerCount === 3 }" @click="createForm.playerCount = 3">三人</button>
-        <button :class="{ active: createForm.playerCount === 4 }" @click="createForm.playerCount = 4">四人</button>
-      </div>
       <label>
         房间名称
         <input v-model="createForm.name" placeholder="今晚这桌" />
