@@ -39,6 +39,11 @@ export interface ScoreTransaction {
   createdByNickname: string
   isReverted: boolean
   revertedAt: string | null
+  undoRequestedAt: string | null
+  undoRequestedBy: number | null
+  undoRequestedByNickname: string
+  undoFromConfirmedAt: string | null
+  undoToConfirmedAt: string | null
 }
 
 export interface Settlement {
@@ -117,8 +122,8 @@ export const api = {
       body: JSON.stringify(payload)
     })
   },
-  undo(code: string, playerId: number) {
-    return request<RoomState>(`/api/rooms/${code}/undo`, {
+  confirmUndo(code: string, transactionId: number, playerId: number) {
+    return request<RoomState>(`/api/rooms/${code}/transactions/${transactionId}/undo-confirm`, {
       method: 'POST',
       body: JSON.stringify({ playerId })
     })

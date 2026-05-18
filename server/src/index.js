@@ -2,6 +2,7 @@ import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import { Server } from 'socket.io'
 import {
+  confirmTransactionUndo,
   createRoom,
   finishGame,
   getHistoryDetail,
@@ -9,8 +10,7 @@ import {
   joinRoom,
   listHistory,
   startGame,
-  transferScore,
-  undoLatestTransfer
+  transferScore
 } from './service.js'
 
 const port = Number(process.env.PORT || 3100)
@@ -100,9 +100,13 @@ app.post('/api/rooms/:code/transfer', async (request, reply) => {
   }
 })
 
-app.post('/api/rooms/:code/undo', async (request, reply) => {
+app.post('/api/rooms/:code/transactions/:transactionId/undo-confirm', async (request, reply) => {
   try {
-    const state = undoLatestTransfer(request.params.code, request.body?.playerId)
+    const state = confirmTransactionUndo(
+      request.params.code,
+      request.params.transactionId,
+      request.body?.playerId
+    )
     broadcastRoom(state)
     reply.send(state)
   } catch (error) {

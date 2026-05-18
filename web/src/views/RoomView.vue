@@ -13,7 +13,7 @@ const state = computed(() => roomStore.state)
 const room = computed(() => state.value?.room)
 const players = computed(() => state.value?.players || [])
 const activeTransactions = computed(() => state.value?.transactions || [])
-const latestTransactions = computed(() => activeTransactions.value.slice(0, 8))
+const visibleTransactions = computed(() => activeTransactions.value)
 
 const transferForm = reactive({
   fromPlayerId: 0,
@@ -72,10 +72,37 @@ async function submitTransfer() {
   transferForm.remark = ''
 }
 
-async function undo() {
+function addQuickAmount(amount: number) {
+  transferForm.amount = Math.max(0, Number(transferForm.amount || 0) + amount)
+}
+
+function clearAmount() {
+  transferForm.amount = 0
+}
+
+function canConfirmUndo(item: { fromPlayerId: number; toPlayerId: number; isReverted: boolean }) {
+  return room.value?.status === 'playing'
+    && !item.isReverted
+    && (item.fromPlayerId === roomStore.playerId || item.toPlayerId === roomStore.playerId)
+}
+
+function undoStatus(item: {
+  isReverted: boolean
+  undoRequestedAt: string | null
+  undoFromConfirmedAt: string | null
+  undoToConfirmedAt: string | null
+}) {
+  if (item.isReverted) return '已撤销'
+  if (!item.undoRequestedAt) return '未申请撤销'
+  const fromDone = item.undoFromConfirmedAt ? '付方已确认' : '付方待确认'
+  const toDone = item.undoToConfirmedAt ? '收方已确认' : '收方待确认'
+  return `${fromDone} / ${toDone}`
+}
+
+async function confirmUndo(transactionId: number) {
   if (!ensurePlayer()) return
-  if (!window.confirm('撤销上一笔有效流水？')) return
-  await roomStore.applyAction(() => api.undo(code.value, roomStore.playerId!))
+  if (!window.confirm('确认申请或同意撤销这笔流水？收付双方都确认后才会回滚分数。')) return
+  await roomStore.applyAction(() => api.confirmUndo(code.value, transactionId, roomStore.playerId!))
 }
 
 async function finish() {
@@ -130,7 +157,6 @@ async function finish() {
       <section v-if="room.status === 'playing'" class="panel">
         <div class="section-title">
           <h2>记一笔</h2>
-          <button class="ghost-button danger" :disabled="!roomStore.isOwner || roomStore.loading" @click="undo">撤销</button>
         </div>
         <div class="grid two">
           <label>
@@ -151,8 +177,9 @@ async function finish() {
           <input v-model.number="transferForm.amount" type="number" min="1" />
         </label>
         <div class="quick-grid">
-          <button v-for="amount in quickAmounts" :key="amount" @click="transferForm.amount = amount">
-            {{ amount }}
+          <button type="button" @click="clearAmount">清零</button>
+          <button v-for="amount in quickAmounts" :key="amount" type="button" @click="addQuickAmount(amount)">
+            +{{ amount }}
           </button>
         </div>
         <label>
@@ -181,11 +208,22 @@ async function finish() {
           <h2>流水</h2>
           <span>{{ activeTransactions.length }} 笔</span>
         </div>
-        <div v-if="!latestTransactions.length" class="empty">暂无流水</div>
+        <div v-if="!visibleTransactions.length" class="empty">暂无流水</div>
         <div v-else class="timeline">
-          <article v-for="item in latestTransactions" :key="item.id" :class="{ reverted: item.isReverted }">
-            <strong>{{ item.fromNickname }} 给 {{ item.toNickname }} {{ item.amount }} 分</strong>
-            <span>{{ item.remark || '无备注' }}</span>
+          <article v-for="item in visibleTransactions" :key="item.id" :class="{ reverted: item.isReverted, pending: item.undoRequestedAt && !item.isReverted }">
+            <div class="timeline-main">
+              <strong>{{ item.fromNickname }} 给 {{ item.toNickname }} {{ item.amount }} 分</strong>
+              <span>{{ item.remark || '无备注' }}</span>
+              <small>{{ undoStatus(item) }}</small>
+            </div>
+            <button
+              v-if="canConfirmUndo(item)"
+              class="ghost-button danger compact-button"
+              :disabled="roomStore.loading"
+              @click="confirmUndo(item.id)"
+            >
+              {{ item.undoRequestedAt ? '确认撤销' : '申请撤销' }}
+            </button>
           </article>
         </div>
       </section>

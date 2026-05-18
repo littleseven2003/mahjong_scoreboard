@@ -166,10 +166,10 @@ POST /api/rooms/:code/transfer
 
 后端会扣减付款方分数、增加收款方分数，并写入流水。
 
-## 撤销上一笔
+## 确认撤销指定流水
 
 ```http
-POST /api/rooms/:code/undo
+POST /api/rooms/:code/transactions/:transactionId/undo-confirm
 ```
 
 请求：
@@ -180,7 +180,7 @@ POST /api/rooms/:code/undo
 }
 ```
 
-只有房主可以撤销。撤销会标记上一笔有效流水为已撤销，并回滚分数。
+只有该笔流水的付款方和收款方可以确认撤销。第一次调用会创建撤销申请并记录当前玩家确认；另一方确认后，后端会标记该流水为已撤销并回滚双方分数。
 
 ## 结束结算
 

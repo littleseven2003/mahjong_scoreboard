@@ -81,6 +81,16 @@ function assertPositiveInteger(value, label) {
   return number
 }
 
+function assertNonNegativeInteger(value, label) {
+  const number = Number(value)
+  if (!Number.isInteger(number) || number < 0) {
+    const error = new Error(`${label} 必须是 0 或正整数`)
+    error.statusCode = 400
+    throw error
+  }
+  return number
+}
+
 function assertNickname(nickname) {
   const value = String(nickname || '').trim()
   if (!value || value.length > 16) {
@@ -97,11 +107,13 @@ function readTransactions(roomId) {
       t.*,
       fp.nickname AS from_nickname,
       tp.nickname AS to_nickname,
-      cp.nickname AS created_by_nickname
+      cp.nickname AS created_by_nickname,
+      up.nickname AS undo_requested_by_nickname
     FROM transactions t
     JOIN players fp ON fp.id = t.from_player_id
     JOIN players tp ON tp.id = t.to_player_id
     LEFT JOIN players cp ON cp.id = t.created_by
+    LEFT JOIN players up ON up.id = t.undo_requested_by
     WHERE t.room_id = ?
     ORDER BY t.id DESC
   `).all(roomId).map((row) => ({
@@ -117,7 +129,12 @@ function readTransactions(roomId) {
     createdBy: row.created_by,
     createdByNickname: row.created_by_nickname || '',
     isReverted: Boolean(row.is_reverted),
-    revertedAt: row.reverted_at
+    revertedAt: row.reverted_at,
+    undoRequestedAt: row.undo_requested_at,
+    undoRequestedBy: row.undo_requested_by,
+    undoRequestedByNickname: row.undo_requested_by_nickname || '',
+    undoFromConfirmedAt: row.undo_from_confirmed_at,
+    undoToConfirmedAt: row.undo_to_confirmed_at
   }))
 }
 
@@ -169,7 +186,7 @@ export function createRoom(payload) {
       throw error
     }
 
-    const initialScore = assertPositiveInteger(payload.initialScore ?? 1000, '起始分')
+    const initialScore = assertNonNegativeInteger(payload.initialScore ?? 1000, '起始分')
     const scoreRate = Number(payload.scoreRate ?? 1)
     if (!Number.isFinite(scoreRate) || scoreRate <= 0) {
       const error = new Error('计分单位必须大于 0')
@@ -324,33 +341,62 @@ export function transferScore(code, payload) {
   })
 }
 
-export function undoLatestTransfer(code, playerId) {
+export function confirmTransactionUndo(code, transactionId, playerId) {
   return transaction(() => {
     const room = ensureRoom(code)
-    ensureOwner(room.id, playerId)
-
     if (room.status !== 'playing') {
       const error = new Error('只有进行中的房间可以撤销')
       error.statusCode = 409
       throw error
     }
 
-    const latest = db.prepare(`
+    const actorId = Number(playerId)
+    const item = db.prepare(`
       SELECT * FROM transactions
-      WHERE room_id = ? AND is_reverted = 0
-      ORDER BY id DESC
-      LIMIT 1
-    `).get(room.id)
+      WHERE id = ? AND room_id = ? AND is_reverted = 0
+    `).get(Number(transactionId), room.id)
 
-    if (!latest) {
-      const error = new Error('暂无可撤销的流水')
+    if (!item) {
+      const error = new Error('流水不存在或已撤销')
       error.statusCode = 404
       throw error
     }
 
-    db.prepare('UPDATE players SET current_score = current_score + ? WHERE id = ?').run(latest.amount, latest.from_player_id)
-    db.prepare('UPDATE players SET current_score = current_score - ? WHERE id = ?').run(latest.amount, latest.to_player_id)
-    db.prepare('UPDATE transactions SET is_reverted = 1, reverted_at = ? WHERE id = ?').run(now(), latest.id)
+    const isFromPlayer = item.from_player_id === actorId
+    const isToPlayer = item.to_player_id === actorId
+    if (!isFromPlayer && !isToPlayer) {
+      const error = new Error('只有该笔流水的收付双方可以确认撤销')
+      error.statusCode = 403
+      throw error
+    }
+
+    if (!getPlayerRow(actorId, room.id)) {
+      const error = new Error('玩家不存在或不属于该房间')
+      error.statusCode = 400
+      throw error
+    }
+
+    const currentTime = now()
+    const requestedAt = item.undo_requested_at || currentTime
+    const requestedBy = item.undo_requested_by || actorId
+    const fromConfirmedAt = item.undo_from_confirmed_at || (isFromPlayer ? currentTime : null)
+    const toConfirmedAt = item.undo_to_confirmed_at || (isToPlayer ? currentTime : null)
+
+    db.prepare(`
+      UPDATE transactions
+      SET
+        undo_requested_at = ?,
+        undo_requested_by = ?,
+        undo_from_confirmed_at = ?,
+        undo_to_confirmed_at = ?
+      WHERE id = ?
+    `).run(requestedAt, requestedBy, fromConfirmedAt, toConfirmedAt, item.id)
+
+    if (fromConfirmedAt && toConfirmedAt) {
+      db.prepare('UPDATE players SET current_score = current_score + ? WHERE id = ?').run(item.amount, item.from_player_id)
+      db.prepare('UPDATE players SET current_score = current_score - ? WHERE id = ?').run(item.amount, item.to_player_id)
+      db.prepare('UPDATE transactions SET is_reverted = 1, reverted_at = ? WHERE id = ?').run(currentTime, item.id)
+    }
 
     return getRoomState(room.id)
   })

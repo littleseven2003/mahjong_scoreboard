@@ -54,10 +54,15 @@ db.exec(`
     created_by INTEGER,
     is_reverted INTEGER NOT NULL DEFAULT 0,
     reverted_at TEXT,
+    undo_requested_at TEXT,
+    undo_requested_by INTEGER,
+    undo_from_confirmed_at TEXT,
+    undo_to_confirmed_at TEXT,
     FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE,
     FOREIGN KEY (from_player_id) REFERENCES players(id),
     FOREIGN KEY (to_player_id) REFERENCES players(id),
-    FOREIGN KEY (created_by) REFERENCES players(id)
+    FOREIGN KEY (created_by) REFERENCES players(id),
+    FOREIGN KEY (undo_requested_by) REFERENCES players(id)
   );
 
   CREATE TABLE IF NOT EXISTS settlements (
@@ -73,6 +78,21 @@ db.exec(`
     FOREIGN KEY (player_id) REFERENCES players(id)
   );
 `)
+
+function addColumnIfMissing(table, column, definition) {
+  try {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
+  } catch (error) {
+    if (!String(error.message || '').includes('duplicate column name')) {
+      throw error
+    }
+  }
+}
+
+addColumnIfMissing('transactions', 'undo_requested_at', 'TEXT')
+addColumnIfMissing('transactions', 'undo_requested_by', 'INTEGER')
+addColumnIfMissing('transactions', 'undo_from_confirmed_at', 'TEXT')
+addColumnIfMissing('transactions', 'undo_to_confirmed_at', 'TEXT')
 
 export function now() {
   return new Date().toISOString()

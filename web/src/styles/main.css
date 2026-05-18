@@ -112,6 +112,12 @@ label {
   font-weight: 700;
 }
 
+.field-error {
+  color: #ad3131;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 input,
 select {
   width: 100%;
@@ -166,7 +172,7 @@ select:focus {
 }
 
 .quick-grid {
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .segmented button,
@@ -226,6 +232,12 @@ select:focus {
 
 .ghost-button.danger {
   color: #ad3131;
+}
+
+.compact-button {
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: 13px;
 }
 
 .icon-button {
@@ -352,6 +364,26 @@ button:disabled {
   text-decoration: line-through;
 }
 
+.timeline article.pending {
+  border-color: #e6c65d;
+  background: #fffaf0;
+}
+
+.timeline article {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.timeline-main {
+  display: grid;
+  gap: 4px;
+}
+
+.timeline-main small {
+  color: #8a6a13;
+  font-weight: 800;
+}
+
 .empty,
 .muted,
 .error-text {
@@ -387,6 +419,10 @@ button:disabled {
 
   .quick-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .timeline article {
+    grid-template-columns: 1fr;
   }
 
   .score-tile {
