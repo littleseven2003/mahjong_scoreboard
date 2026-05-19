@@ -4,6 +4,8 @@
 
 ## 访问应用
 
+部署用户建议从 [GitHub Releases](https://github.com/littleseven2003/mahjong_scoreboard/releases) 下载稳定版本源码包后启动服务。
+
 本地开发环境访问：
 
 ```text

@@ -38,6 +38,13 @@
 
 ## 快速开始
 
+推荐部署用户从 GitHub Release 下载稳定版本：
+
+1. 打开 [Releases](https://github.com/littleseven2003/mahjong_scoreboard/releases) 页面。
+2. 下载目标版本的 `Source code (zip)` 或 `Source code (tar.gz)`。
+3. 解压后进入项目根目录。
+4. 执行 Docker Compose 部署命令。
+
 安装依赖：
 
 ```bash
@@ -79,6 +86,8 @@ docker compose up -d --build
 ```text
 http://服务器局域网IP:8899
 ```
+
+当前发布版本：`v0.1.0`。
 
 ## 项目结构
 
