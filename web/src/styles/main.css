@@ -112,55 +112,13 @@ h2 {
   gap: 14px;
 }
 
-.app-logo svg {
+.app-logo img {
   width: 72px;
   height: 72px;
+  border-radius: 18px;
   flex: 0 0 auto;
+  object-fit: contain;
   filter: drop-shadow(0 12px 20px rgba(23, 63, 50, 0.18));
-}
-
-.logo-table {
-  fill: #173f32;
-}
-
-.logo-tile {
-  fill: #fffaf0;
-  stroke: #f5d17b;
-  stroke-width: 2;
-}
-
-.tile-east {
-  transform: rotate(-5deg);
-  transform-origin: 26px 26px;
-}
-
-.tile-west {
-  transform: rotate(5deg);
-  transform-origin: 46px 46px;
-}
-
-.logo-line,
-.logo-score,
-.logo-dot-line {
-  fill: none;
-  stroke-linecap: round;
-}
-
-.logo-line {
-  stroke: #236f4e;
-  stroke-width: 2;
-}
-
-.logo-score,
-.logo-dot-line {
-  stroke: #f5d17b;
-  stroke-width: 3;
-}
-
-.logo-dot {
-  fill: #c2342b;
-  stroke: #f5d17b;
-  stroke-width: 2;
 }
 
 .app-logo strong,
@@ -779,7 +737,7 @@ button:disabled {
     font-size: 24px;
   }
 
-  .app-logo svg {
+  .app-logo img {
     width: 64px;
     height: 64px;
   }

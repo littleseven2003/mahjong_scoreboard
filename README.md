@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/assets/brand/logo.png" width="120" alt="雀桌记 Logo" />
+
 # 雀桌记
 
 轻量、实时、适合线下麻将桌的 Web 记分与结算工具。
