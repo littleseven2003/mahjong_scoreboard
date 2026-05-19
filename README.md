@@ -1,12 +1,34 @@
+<div align="center">
+
 # 麻将桌计分器
 
-![Version](https://img.shields.io/badge/version-v0.2.0-236f4e)
-![License](https://img.shields.io/badge/license-GPL--3.0-f5d17b)
-![Docker](https://img.shields.io/badge/deploy-Docker%20Compose-173f32)
-![Vue](https://img.shields.io/badge/frontend-Vue%203-42b883)
-![Node](https://img.shields.io/badge/backend-Node.js%2024-5fa04e)
+轻量、实时、适合线下麻将桌的 Web 记分与结算工具。
+
+[![Version](https://img.shields.io/badge/version-v0.2.0-236f4e?style=for-the-badge)](https://github.com/littleseven2003/mahjong_scoreboard/releases)
+[![License](https://img.shields.io/badge/license-GPL--3.0-f5d17b?style=for-the-badge)](LICENSE)
+[![Docker](https://img.shields.io/badge/deploy-Docker%20Compose-173f32?style=for-the-badge)](docs/deployment.md)
+[![Vue](https://img.shields.io/badge/frontend-Vue%203-42b883?style=for-the-badge)](https://vuejs.org/)
+[![Node](https://img.shields.io/badge/backend-Node.js%2024-5fa04e?style=for-the-badge)](https://nodejs.org/)
+
+[快速部署](#快速开始) · [功能特性](#项目特性) · [界面预览](#界面预览) · [文档](#文档)
+
+</div>
+
+## 项目简介
 
 `mahjong_scoreboard` 是一个面向家庭娱乐麻将桌场景的轻量级实时计分与结算 Web 应用。项目支持 Docker Compose 部署，用户在局域网内通过手机浏览器访问同一个房间，实时查看分数、流水和结算结果。
+
+后端是唯一可信分数来源。前端只提交操作，所有分数变化、撤销和结算都由后端写入 SQLite 后广播给客户端。
+
+## 界面预览
+
+| 首页 | 创建房间 |
+| --- | --- |
+| ![首页](docs/assets/screenshots/home.jpg) | ![创建房间](docs/assets/screenshots/create-room.jpg) |
+
+| 房间记分 |
+| --- |
+| ![房间记分](docs/assets/screenshots/room.jpg) |
 
 ## 项目特性
 
@@ -36,22 +58,11 @@
 
 当前不包含完整麻将规则、自动算番、用户登录、微信分享、公网访问、排行榜或金额支付能力。本项目只用于娱乐积分记录与结算辅助。
 
-## 合规声明
-
-本软件工具仅用于线下娱乐麻将场景中的积分记录与结算辅助，与任何赌博、资金交易或其他违法行为无关。使用者应遵守所在地法律法规，不得将本项目用于任何违法违规用途。
-
-## 技术栈
-
-- 前端：Vue 3 + Vite + TypeScript + Pinia + Vue Router
-- 后端：Node.js 24 + Fastify + Socket.IO
-- 数据库：SQLite
-- 部署：Docker Compose + Nginx 静态服务反向代理
-
-后端是唯一可信分数来源。前端只提交操作，所有分数变化、撤销和结算都由后端写入 SQLite 后广播给客户端。
-
 ## 快速开始
 
 ### 部署用户
+
+推荐从 GitHub Release 下载稳定版本：
 
 1. 打开 [Releases](https://github.com/littleseven2003/mahjong_scoreboard/releases) 页面。
 2. 下载目标版本的 `Source code (zip)` 或 `Source code (tar.gz)`。
@@ -102,6 +113,26 @@ http://localhost:8899
 npm run build
 ```
 
+## 技术架构
+
+```mermaid
+flowchart LR
+  Player["手机 / Pad / PC 浏览器"] --> Web["Nginx + Vue 静态资源"]
+  Web -->|/api| Server["Fastify REST API"]
+  Web -->|/socket.io| Socket["Socket.IO 实时同步"]
+  Server --> DB["SQLite 数据库"]
+  Socket --> Server
+```
+
+## 技术栈
+
+| 模块 | 技术 |
+| --- | --- |
+| 前端 | Vue 3, Vite, TypeScript, Pinia, Vue Router |
+| 后端 | Node.js 24, Fastify, Socket.IO |
+| 数据库 | SQLite |
+| 部署 | Docker Compose, Nginx |
+
 ## 项目结构
 
 ```text
@@ -128,11 +159,17 @@ mahjong_scoreboard/
 
 ## 文档
 
-- [设计文档](docs/design.md)
-- [使用说明](docs/usage.md)
-- [部署说明](docs/deployment.md)
-- [开发说明](docs/development.md)
-- [API 概览](docs/api.md)
+| 文档 | 说明 |
+| --- | --- |
+| [设计文档](docs/design.md) | 项目定位、页面结构、业务规则 |
+| [使用说明](docs/usage.md) | 创建房间、加入房间、记分、撤销和结算 |
+| [部署说明](docs/deployment.md) | Docker Compose 部署和数据持久化 |
+| [开发说明](docs/development.md) | 本地开发、构建验证和目录说明 |
+| [API 概览](docs/api.md) | REST API 与 Socket.IO 事件 |
+
+## 合规声明
+
+本软件工具仅用于线下娱乐麻将场景中的积分记录与结算辅助，与任何赌博、资金交易或其他违法行为无关。使用者应遵守所在地法律法规，不得将本项目用于任何违法违规用途。
 
 ## 开源协议
 
