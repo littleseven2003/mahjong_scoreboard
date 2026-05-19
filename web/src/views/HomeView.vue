@@ -6,7 +6,7 @@ import AppLogo from '../components/AppLogo.vue'
 const CONTINUE_TIMEOUT_MS = 12 * 60 * 60 * 1000
 const githubUrl = 'https://github.com/littleseven2003/mahjong_scoreboard'
 const author = 'littleseven2003'
-const version = 'v0.1.0'
+const version = 'v0.2.0'
 
 type ContinueRoom = {
   state: RoomState

@@ -32,17 +32,15 @@ export const useRoomStore = defineStore('room', () => {
 
   function connectRoom(code: string) {
     const normalized = code.toUpperCase()
-    if (connectedCode.value === normalized) return
-
     const socket = getSocket()
-    if (connectedCode.value) {
+    if (connectedCode.value && connectedCode.value !== normalized) {
       socket.emit('room:leave', { roomCode: connectedCode.value })
     }
 
     connectedCode.value = normalized
-    socket.emit('room:join', { roomCode: normalized })
     socket.off('room:sync')
     socket.off('room:disbanded')
+    socket.off('connect', rejoinConnectedRoom)
     socket.on('room:sync', (nextState: RoomState) => {
       if (nextState.room.code === connectedCode.value) {
         state.value = nextState
@@ -59,6 +57,14 @@ export const useRoomStore = defineStore('room', () => {
         detail: { roomCode, message }
       }))
     })
+    socket.on('connect', rejoinConnectedRoom)
+    rejoinConnectedRoom()
+  }
+
+  function rejoinConnectedRoom() {
+    if (!connectedCode.value) return
+
+    getSocket().emit('room:join', { roomCode: connectedCode.value })
   }
 
   function clearPlayerId(code: string) {
@@ -120,8 +126,10 @@ export const useRoomStore = defineStore('room', () => {
     error.value = ''
     try {
       state.value = await action()
+      return true
     } catch (message) {
       setError(message)
+      return false
     } finally {
       loading.value = false
     }

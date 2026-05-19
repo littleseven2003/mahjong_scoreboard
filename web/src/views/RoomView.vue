@@ -17,6 +17,7 @@ const visibleTransactions = computed(() => activeTransactions.value)
 const dismissedUndoIds = ref<number[]>([])
 const undoDialogTransactionId = ref<number | null>(null)
 const allReadyNotified = ref(false)
+const lastRoomStatus = ref('')
 type PromptDialog = {
   title: string
   message: string
@@ -30,11 +31,13 @@ type PromptDialog = {
 }
 
 const promptDialog = ref<PromptDialog | null>(null)
+const transferDialogOpen = ref(false)
+const transferMode = ref<'self' | 'behalf'>('self')
 
 const transferForm = reactive({
   fromPlayerId: 0,
   toPlayerId: 0,
-  amount: 10,
+  amount: 0,
   remark: ''
 })
 const transferErrors = reactive({
@@ -42,16 +45,21 @@ const transferErrors = reactive({
   players: ''
 })
 
-const quickAmounts = [1, 2, 5, 10, 20, 50, 100]
-
-const fromOptions = computed(() => {
-  if (!roomStore.isOwner && roomStore.playerId) {
+const transferFromOptions = computed(() => {
+  if (transferMode.value === 'self' && roomStore.playerId) {
     return players.value.filter((player) => player.id === roomStore.playerId)
   }
-  return players.value.filter((player) => player.id !== transferForm.toPlayerId)
+
+  if (roomStore.isOwner) {
+    return transferMode.value === 'behalf'
+      ? players.value.filter((player) => player.id !== roomStore.playerId)
+      : players.value
+  }
+
+  return players.value.filter((player) => player.id === roomStore.playerId)
 })
 
-const toOptions = computed(() =>
+const transferToOptions = computed(() =>
   players.value.filter((player) => player.id !== transferForm.fromPlayerId)
 )
 
@@ -80,15 +88,11 @@ onUnmounted(() => {
 
 watch(players, (nextPlayers) => {
   if (!nextPlayers.length) return
-
-  if (!roomStore.isOwner && roomStore.playerId) {
-    transferForm.fromPlayerId = roomStore.playerId
-  } else if (!fromOptions.value.some((player) => player.id === transferForm.fromPlayerId)) {
-    transferForm.fromPlayerId = fromOptions.value[0]?.id || nextPlayers[0].id
+  if (!transferForm.fromPlayerId || !transferFromOptions.value.some((player) => player.id === transferForm.fromPlayerId)) {
+    transferForm.fromPlayerId = defaultFromPlayerId()
   }
-
-  if (!toOptions.value.some((player) => player.id === transferForm.toPlayerId)) {
-    transferForm.toPlayerId = toOptions.value[0]?.id || 0
+  if (!transferToOptions.value.some((player) => player.id === transferForm.toPlayerId)) {
+    transferForm.toPlayerId = defaultToPlayerId(transferForm.fromPlayerId)
   }
 }, { immediate: true })
 
@@ -101,14 +105,14 @@ watch(pendingUndoForMe, (item) => {
 watch(() => transferForm.fromPlayerId, () => {
   transferErrors.players = ''
   if (transferForm.toPlayerId === transferForm.fromPlayerId) {
-    transferForm.toPlayerId = toOptions.value[0]?.id || 0
+    transferForm.toPlayerId = defaultToPlayerId(transferForm.fromPlayerId)
   }
 })
 
 watch(() => transferForm.toPlayerId, () => {
   transferErrors.players = ''
   if (transferForm.fromPlayerId === transferForm.toPlayerId) {
-    transferForm.fromPlayerId = fromOptions.value[0]?.id || 0
+    transferForm.fromPlayerId = defaultFromPlayerId()
   }
 })
 
@@ -122,6 +126,22 @@ watch([allNonOwnersReady, room, () => roomStore.isOwner], ([isReady, nextRoom, i
 
   if (!isReady) {
     allReadyNotified.value = false
+  }
+})
+
+watch(room, (nextRoom) => {
+  if (!nextRoom) return
+
+  const previousStatus = lastRoomStatus.value
+  lastRoomStatus.value = nextRoom.status
+  if (!previousStatus || previousStatus === nextRoom.status) return
+
+  if (nextRoom.status === 'playing' && !roomStore.isOwner) {
+    openNotice('对局已开始', '房主已开始对局，可以开始记分了')
+  }
+
+  if (nextRoom.status === 'finished') {
+    openNotice('对局已结束', '房主已结束对局，最终结算已生成')
   }
 })
 
@@ -158,7 +178,9 @@ async function confirmPrompt() {
   const dialog = promptDialog.value
   if (!dialog) return
   await dialog.onConfirm()
-  promptDialog.value = null
+  if (promptDialog.value === dialog) {
+    promptDialog.value = null
+  }
 }
 
 async function cancelPrompt() {
@@ -168,6 +190,9 @@ async function cancelPrompt() {
     return
   }
   await dialog.onCancel()
+  if (promptDialog.value === dialog) {
+    promptDialog.value = null
+  }
 }
 
 function playerDiff(score: number) {
@@ -254,10 +279,35 @@ async function submitTransfer() {
     return
   }
 
-  await roomStore.applyAction(() => api.transferScore(code.value, {
+  const success = await roomStore.applyAction(() => api.transferScore(code.value, {
     ...transferForm,
     createdBy: roomStore.playerId
   }))
+  if (!success) return
+
+  transferForm.remark = ''
+  transferForm.amount = 0
+  transferDialogOpen.value = false
+}
+
+function defaultFromPlayerId() {
+  if (transferMode.value === 'self' && roomStore.playerId) return roomStore.playerId
+  if (transferMode.value === 'behalf' && roomStore.isOwner) {
+    return players.value.find((player) => player.id !== roomStore.playerId)?.id || players.value[0]?.id || 0
+  }
+  return roomStore.playerId || players.value[0]?.id || 0
+}
+
+function defaultToPlayerId(fromPlayerId: number) {
+  return players.value.find((player) => player.id !== fromPlayerId)?.id || 0
+}
+
+function resetTransferForm(fromPlayerId = defaultFromPlayerId()) {
+  transferErrors.amount = ''
+  transferErrors.players = ''
+  transferForm.fromPlayerId = fromPlayerId
+  transferForm.toPlayerId = defaultToPlayerId(fromPlayerId)
+  transferForm.amount = 0
   transferForm.remark = ''
 }
 
@@ -265,14 +315,26 @@ function playerOptionLabel(player: { id: number; nickname: string }) {
   return player.id === roomStore.playerId ? `${player.nickname}（自己）` : player.nickname
 }
 
-function addQuickAmount(amount: number) {
-  transferErrors.amount = ''
-  transferForm.amount = Math.max(0, Number(transferForm.amount || 0) + amount)
+function canOpenTransferFor(playerId: number) {
+  return room.value?.status === 'playing' && (roomStore.isOwner || playerId === roomStore.playerId)
 }
 
-function clearAmount() {
-  transferErrors.amount = ''
-  transferForm.amount = 0
+function openTransferDialog(fromPlayerId = roomStore.playerId || 0) {
+  if (!ensurePlayer()) return
+
+  transferMode.value = roomStore.isOwner && fromPlayerId !== roomStore.playerId ? 'behalf' : 'self'
+  resetTransferForm(fromPlayerId || defaultFromPlayerId())
+  transferDialogOpen.value = true
+}
+
+function closeTransferDialog() {
+  transferDialogOpen.value = false
+  resetTransferForm()
+}
+
+function switchTransferMode(mode: 'self' | 'behalf') {
+  transferMode.value = mode
+  resetTransferForm(defaultFromPlayerId())
 }
 
 function canConfirmUndo(item: { fromPlayerId: number; toPlayerId: number; isReverted: boolean }) {
@@ -370,6 +432,15 @@ async function finish() {
           </div>
           <strong>{{ player.currentScore }}</strong>
           <small :class="diffClass(player.currentScore)">{{ formatDiff(player.currentScore) }}</small>
+          <button
+            v-if="canOpenTransferFor(player.id)"
+            class="score-action-button"
+            type="button"
+            :disabled="roomStore.loading"
+            @click="openTransferDialog(player.id)"
+          >
+            扣分
+          </button>
         </article>
       </section>
 
@@ -410,39 +481,13 @@ async function finish() {
 
       <section v-if="room.status === 'playing'" class="panel">
         <div class="section-title">
-          <h2>记一笔</h2>
+          <h2>积分变动</h2>
+          <span>从扣分方发起</span>
         </div>
-        <div class="grid two">
-          <label>
-            扣分玩家
-            <select v-model.number="transferForm.fromPlayerId" :disabled="!roomStore.isOwner">
-              <option v-for="player in fromOptions" :key="player.id" :value="player.id">{{ playerOptionLabel(player) }}</option>
-            </select>
-          </label>
-          <label>
-            加分玩家
-            <select v-model.number="transferForm.toPlayerId">
-              <option v-for="player in toOptions" :key="player.id" :value="player.id">{{ playerOptionLabel(player) }}</option>
-            </select>
-          </label>
-        </div>
-        <small v-if="transferErrors.players" class="field-error form-error">{{ transferErrors.players }}</small>
-        <label>
-          分数
-          <input v-model.number="transferForm.amount" type="number" min="1" @input="transferErrors.amount = ''" />
-          <small v-if="transferErrors.amount" class="field-error">{{ transferErrors.amount }}</small>
-        </label>
-        <div class="quick-grid">
-          <button type="button" @click="clearAmount">清零</button>
-          <button v-for="amount in quickAmounts" :key="amount" type="button" @click="addQuickAmount(amount)">
-            +{{ amount }}
-          </button>
-        </div>
-        <label>
-          备注
-          <input v-model="transferForm.remark" placeholder="点炮、杠分、其他" />
-        </label>
-        <button class="primary-button" :disabled="roomStore.loading" @click="submitTransfer">确认记分</button>
+        <p class="helper-text">点击计分卡片上的“扣分”，在弹窗里选择加分玩家并填写分数。</p>
+        <button class="primary-button" :disabled="roomStore.loading" @click="openTransferDialog()">
+          {{ roomStore.isOwner ? '记录积分变动' : '我扣分' }}
+        </button>
         <button class="secondary-button" :disabled="!roomStore.isOwner || roomStore.loading" @click="finish">结束结算</button>
       </section>
 
@@ -504,6 +549,53 @@ async function finish() {
             取消撤销
           </button>
           <button class="ghost-button modal-close" @click="closeUndoDialogTemporarily">暂时关闭</button>
+        </section>
+      </div>
+
+      <div v-if="transferDialogOpen" class="modal-backdrop">
+        <section class="modal-panel">
+          <h2>记录积分变动</h2>
+          <div v-if="roomStore.isOwner" class="modal-tabs">
+            <button type="button" :class="{ active: transferMode === 'self' }" @click="switchTransferMode('self')">
+              自己扣分
+            </button>
+            <button type="button" :class="{ active: transferMode === 'behalf' }" @click="switchTransferMode('behalf')">
+              代记扣分
+            </button>
+          </div>
+          <div class="transfer-summary">
+            <label>
+              扣分玩家
+              <select v-model.number="transferForm.fromPlayerId" :disabled="transferMode === 'self'">
+                <option v-for="player in transferFromOptions" :key="player.id" :value="player.id">{{ playerOptionLabel(player) }}</option>
+              </select>
+            </label>
+            <label>
+              加分玩家
+              <select v-model.number="transferForm.toPlayerId">
+                <option v-for="player in transferToOptions" :key="player.id" :value="player.id">{{ playerOptionLabel(player) }}</option>
+              </select>
+            </label>
+            <small v-if="transferErrors.players" class="field-error form-error">{{ transferErrors.players }}</small>
+            <label>
+              分数
+              <input
+                v-model.number="transferForm.amount"
+                type="number"
+                inputmode="numeric"
+                min="0"
+                step="1"
+                @input="transferErrors.amount = ''"
+              />
+              <small v-if="transferErrors.amount" class="field-error">{{ transferErrors.amount }}</small>
+            </label>
+            <label>
+              备注
+              <input v-model="transferForm.remark" placeholder="点炮、杠分、其他" />
+            </label>
+          </div>
+          <button class="primary-button" :disabled="roomStore.loading" @click="submitTransfer">确认变动</button>
+          <button class="ghost-button modal-close" :disabled="roomStore.loading" @click="closeTransferDialog">取消</button>
         </section>
       </div>
     </template>
