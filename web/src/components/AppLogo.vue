@@ -1,5 +1,5 @@
 <template>
-  <div class="app-logo" aria-label="麻将桌计分器">
+  <div class="app-logo" aria-label="雀桌记">
     <svg viewBox="0 0 72 72" role="img" aria-hidden="true">
       <rect class="logo-table" x="6" y="6" width="60" height="60" rx="16" />
       <rect class="logo-tile tile-east" x="18" y="14" width="16" height="24" rx="5" />
@@ -10,8 +10,8 @@
       <path class="logo-dot-line" d="M45 27h8" />
     </svg>
     <div>
-      <strong>麻将桌计分器</strong>
-      <span>实时记分与结算</span>
+      <strong>雀桌记</strong>
+      <span>牌桌流水与结算</span>
     </div>
   </div>
 </template>
