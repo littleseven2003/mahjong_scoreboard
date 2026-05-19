@@ -293,9 +293,13 @@ async function submitTransfer() {
 function defaultFromPlayerId() {
   if (transferMode.value === 'self' && roomStore.playerId) return roomStore.playerId
   if (transferMode.value === 'behalf' && roomStore.isOwner) {
-    return players.value.find((player) => player.id !== roomStore.playerId)?.id || players.value[0]?.id || 0
+    return defaultBehalfFromPlayerId()
   }
   return roomStore.playerId || players.value[0]?.id || 0
+}
+
+function defaultBehalfFromPlayerId() {
+  return players.value.find((player) => player.id !== roomStore.playerId)?.id || players.value[0]?.id || 0
 }
 
 function defaultToPlayerId(fromPlayerId: number) {
@@ -315,15 +319,19 @@ function playerOptionLabel(player: { id: number; nickname: string }) {
   return player.id === roomStore.playerId ? `${player.nickname}（自己）` : player.nickname
 }
 
-function canOpenTransferFor(playerId: number) {
-  return room.value?.status === 'playing' && (roomStore.isOwner || playerId === roomStore.playerId)
-}
-
 function openTransferDialog(fromPlayerId = roomStore.playerId || 0) {
   if (!ensurePlayer()) return
 
   transferMode.value = roomStore.isOwner && fromPlayerId !== roomStore.playerId ? 'behalf' : 'self'
   resetTransferForm(fromPlayerId || defaultFromPlayerId())
+  transferDialogOpen.value = true
+}
+
+function openBehalfTransferDialog() {
+  if (!ensurePlayer() || !roomStore.isOwner) return
+
+  transferMode.value = 'behalf'
+  resetTransferForm(defaultBehalfFromPlayerId())
   transferDialogOpen.value = true
 }
 
@@ -335,6 +343,26 @@ function closeTransferDialog() {
 function switchTransferMode(mode: 'self' | 'behalf') {
   transferMode.value = mode
   resetTransferForm(defaultFromPlayerId())
+}
+
+function selectFromPlayer(playerId: number) {
+  if (transferMode.value === 'self') return
+
+  transferForm.fromPlayerId = playerId
+  if (transferForm.toPlayerId === playerId) {
+    transferForm.toPlayerId = defaultToPlayerId(playerId)
+  }
+}
+
+function selectToPlayer(playerId: number) {
+  if (playerId === transferForm.fromPlayerId) return
+
+  transferErrors.players = ''
+  transferForm.toPlayerId = playerId
+}
+
+function isTransferToDisabled(playerId: number) {
+  return playerId === transferForm.fromPlayerId
 }
 
 function canConfirmUndo(item: { fromPlayerId: number; toPlayerId: number; isReverted: boolean }) {
@@ -432,15 +460,6 @@ async function finish() {
           </div>
           <strong>{{ player.currentScore }}</strong>
           <small :class="diffClass(player.currentScore)">{{ formatDiff(player.currentScore) }}</small>
-          <button
-            v-if="canOpenTransferFor(player.id)"
-            class="score-action-button"
-            type="button"
-            :disabled="roomStore.loading"
-            @click="openTransferDialog(player.id)"
-          >
-            扣分
-          </button>
         </article>
       </section>
 
@@ -484,10 +503,15 @@ async function finish() {
           <h2>积分变动</h2>
           <span>从扣分方发起</span>
         </div>
-        <p class="helper-text">点击计分卡片上的“扣分”，在弹窗里选择加分玩家并填写分数。</p>
-        <button class="primary-button" :disabled="roomStore.loading" @click="openTransferDialog()">
-          {{ roomStore.isOwner ? '记录积分变动' : '我扣分' }}
-        </button>
+        <p class="helper-text">扣分玩家发起积分变动；房主也可以代其他玩家记录。</p>
+        <div class="action-grid" :class="{ two: roomStore.isOwner }">
+          <button class="primary-button" :disabled="roomStore.loading" @click="openTransferDialog(roomStore.playerId || 0)">
+            记录我的扣分
+          </button>
+          <button v-if="roomStore.isOwner" class="secondary-button" :disabled="roomStore.loading" @click="openBehalfTransferDialog">
+            为他人扣分
+          </button>
+        </div>
         <button class="secondary-button" :disabled="!roomStore.isOwner || roomStore.loading" @click="finish">结束结算</button>
       </section>
 
@@ -560,22 +584,40 @@ async function finish() {
               自己扣分
             </button>
             <button type="button" :class="{ active: transferMode === 'behalf' }" @click="switchTransferMode('behalf')">
-              代记扣分
+              为他人扣分
             </button>
           </div>
           <div class="transfer-summary">
-            <label>
-              扣分玩家
-              <select v-model.number="transferForm.fromPlayerId" :disabled="transferMode === 'self'">
-                <option v-for="player in transferFromOptions" :key="player.id" :value="player.id">{{ playerOptionLabel(player) }}</option>
-              </select>
-            </label>
-            <label>
-              加分玩家
-              <select v-model.number="transferForm.toPlayerId">
-                <option v-for="player in transferToOptions" :key="player.id" :value="player.id">{{ playerOptionLabel(player) }}</option>
-              </select>
-            </label>
+            <div class="choice-field">
+              <span>扣分玩家</span>
+              <div class="player-choice-grid">
+                <button
+                  v-for="player in transferFromOptions"
+                  :key="player.id"
+                  type="button"
+                  :class="{ active: transferForm.fromPlayerId === player.id }"
+                  :disabled="transferMode === 'self'"
+                  @click="selectFromPlayer(player.id)"
+                >
+                  {{ playerOptionLabel(player) }}
+                </button>
+              </div>
+            </div>
+            <div class="choice-field">
+              <span>加分玩家</span>
+              <div class="player-choice-grid">
+                <button
+                  v-for="player in players"
+                  :key="player.id"
+                  type="button"
+                  :class="{ active: transferForm.toPlayerId === player.id }"
+                  :disabled="isTransferToDisabled(player.id)"
+                  @click="selectToPlayer(player.id)"
+                >
+                  {{ playerOptionLabel(player) }}
+                </button>
+              </div>
+            </div>
             <small v-if="transferErrors.players" class="field-error form-error">{{ transferErrors.players }}</small>
             <label>
               分数

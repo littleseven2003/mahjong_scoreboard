@@ -7,6 +7,7 @@ const CONTINUE_TIMEOUT_MS = 12 * 60 * 60 * 1000
 const githubUrl = 'https://github.com/littleseven2003/mahjong_scoreboard'
 const author = 'littleseven2003'
 const version = 'v0.2.0'
+const homeHighlights = ['实时同步', '双方确认撤销', 'Docker 部署']
 
 type ContinueRoom = {
   state: RoomState
@@ -63,12 +64,30 @@ onMounted(() => {
     <header class="home-hero">
       <AppLogo />
       <p class="home-subtitle">为线下麻将桌准备的轻量记分工具，支持创建房间、加入对局、准备开局、流水撤销和历史结算。</p>
+      <div class="home-highlight-row">
+        <span v-for="item in homeHighlights" :key="item">{{ item }}</span>
+      </div>
       <div class="home-actions">
         <RouterLink class="primary-button" to="/room/create">创建房间</RouterLink>
         <RouterLink class="secondary-button" to="/room/join">加入房间</RouterLink>
         <RouterLink class="ghost-button" to="/history">历史记录</RouterLink>
       </div>
     </header>
+
+    <section class="home-info-grid">
+      <article>
+        <strong>轻量开桌</strong>
+        <span>三人或四人房间，房主设置起始分和计分单位。</span>
+      </article>
+      <article>
+        <strong>多人同步</strong>
+        <span>积分、撤销和结算都会同步到同房间玩家页面。</span>
+      </article>
+      <article>
+        <strong>清晰流水</strong>
+        <span>每笔变动保留记录，撤销需要相关双方确认。</span>
+      </article>
+    </section>
 
     <section v-if="continuableRooms.length || continueLoading" class="panel">
       <div class="section-title">
@@ -103,6 +122,7 @@ onMounted(() => {
       <a :href="githubUrl" target="_blank" rel="noreferrer">GitHub：{{ githubUrl }}</a>
       <span>作者：{{ author }}</span>
       <span>版本：{{ version }}</span>
+      <span>协议：GPL-3.0</span>
     </footer>
   </main>
 </template>

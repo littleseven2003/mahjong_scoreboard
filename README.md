@@ -1,12 +1,25 @@
-# mahjong_scoreboard
+# 麻将桌计分器
 
-中文名：麻将桌计分器。
+![Version](https://img.shields.io/badge/version-v0.2.0-236f4e)
+![License](https://img.shields.io/badge/license-GPL--3.0-f5d17b)
+![Docker](https://img.shields.io/badge/deploy-Docker%20Compose-173f32)
+![Vue](https://img.shields.io/badge/frontend-Vue%203-42b883)
+![Node](https://img.shields.io/badge/backend-Node.js%2024-5fa04e)
 
 `mahjong_scoreboard` 是一个面向家庭娱乐麻将桌场景的轻量级实时计分与结算 Web 应用。项目支持 Docker Compose 部署，用户在局域网内通过手机浏览器访问同一个房间，实时查看分数、流水和结算结果。
 
-## 功能范围
+## 项目特性
 
-当前已实现：
+| 能力 | 说明 |
+| --- | --- |
+| 快速开桌 | 创建三人或四人房间，设置起始分、计分单位和负分规则 |
+| 实时同步 | 积分变动、撤销流水、准备状态和结算结果同步到房间内所有页面 |
+| 积分变动 | 扣分玩家发起记录；房主可代其他玩家记录扣分 |
+| 双方撤销 | 指定流水需要相关双方确认后才会回滚分数 |
+| 继续对局 | 首页可重新进入当前浏览器加入过的未完成对局 |
+| 历史结算 | 房主结束对局后生成结算，并保留历史详情 |
+
+## 功能范围
 
 - 创建三人或四人房间
 - 从首页继续进入未完成对局，超时对局可删除本机入口
@@ -14,7 +27,7 @@
 - 设置起始分、计分单位、是否允许负分
 - 非房主准备 / 取消准备 / 退出等待房间
 - 房主在房间人数满员且所有非房主准备后开始对局，或在准备阶段解散房间
-- 记录“扣分玩家给加分玩家多少分”
+- 通过弹窗记录扣分玩家、加分玩家、分数和备注
 - Socket.IO 实时同步房间状态
 - 查看记分流水
 - 相关双方确认后撤销指定流水
@@ -38,12 +51,26 @@
 
 ## 快速开始
 
-推荐部署用户从 GitHub Release 下载稳定版本：
+### 部署用户
 
 1. 打开 [Releases](https://github.com/littleseven2003/mahjong_scoreboard/releases) 页面。
 2. 下载目标版本的 `Source code (zip)` 或 `Source code (tar.gz)`。
 3. 解压后进入项目根目录。
-4. 执行 Docker Compose 部署命令。
+4. 执行 Docker Compose 部署命令：
+
+```bash
+docker compose up -d --build
+```
+
+部署后访问：
+
+```text
+http://服务器局域网IP:8899
+```
+
+当前发布版本：`v0.2.0`。
+
+### 开发者
 
 安装依赖：
 
@@ -74,20 +101,6 @@ http://localhost:8899
 ```bash
 npm run build
 ```
-
-Docker Compose 部署：
-
-```bash
-docker compose up -d --build
-```
-
-部署后访问：
-
-```text
-http://服务器局域网IP:8899
-```
-
-当前发布版本：`v0.2.0`。
 
 ## 项目结构
 
