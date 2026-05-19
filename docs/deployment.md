@@ -97,6 +97,42 @@ docker compose ps
 docker compose logs -f
 ```
 
+## 常见问题
+
+### 打开页面显示 403，或 Logo 不显示
+
+这通常表示前端容器内没有正确生成或挂载静态文件，Nginx 在
+`/usr/share/nginx/html` 找不到 `index.html`，因此返回 403。
+
+请检查：
+
+- 上传的是 Release 解压后的完整项目目录，而不仅是 `docker-compose.yml`；
+- `docker-compose.yml` 位于项目根目录，旁边应能看到 `web/`、`server/`、`package.json`；
+- 不要把空目录挂载到前端容器的 `/usr/share/nginx/html`；
+- 修改文件后需要重新构建镜像，而不是只重启旧容器。
+
+可在项目根目录执行：
+
+```bash
+docker compose down
+docker compose up -d --build
+docker compose logs -f web
+```
+
+如果仍然异常，进入前端容器检查文件：
+
+```bash
+docker compose exec web ls -la /usr/share/nginx/html
+```
+
+正常情况下应至少包含：
+
+```text
+index.html
+logo.png
+assets/
+```
+
 停止服务：
 
 ```bash
