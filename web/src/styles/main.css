@@ -501,6 +501,37 @@ button:disabled {
   color: #236f4e;
 }
 
+.room-invite {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  margin: 14px 0;
+  padding: 12px;
+  border: 1px solid #dfe7dc;
+  border-radius: 8px;
+  background: #f8faf7;
+}
+
+.room-invite div {
+  display: grid;
+  gap: 2px;
+}
+
+.room-invite span,
+.invite-link span {
+  color: #67786d;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.room-invite strong,
+.invite-link strong {
+  color: #173f32;
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
 .history-item {
   min-height: 84px;
 }
@@ -692,6 +723,47 @@ button:disabled {
   line-height: 1.6;
 }
 
+.qr-panel,
+.scanner-panel {
+  text-align: center;
+}
+
+.qr-card {
+  display: grid;
+  place-items: center;
+  min-height: 256px;
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid #dfe7dc;
+  border-radius: 8px;
+  background: #f8faf7;
+}
+
+.qr-card img {
+  width: min(100%, 280px);
+  height: auto;
+  border-radius: 8px;
+}
+
+.invite-link {
+  display: grid;
+  gap: 4px;
+  margin-top: 14px;
+}
+
+.scanner-video {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  margin-top: 16px;
+  border-radius: 8px;
+  background: #101912;
+  object-fit: cover;
+}
+
+.hidden-canvas {
+  display: none;
+}
+
 .empty,
 .muted,
 .notice-text,
@@ -756,6 +828,10 @@ button:disabled {
   }
 
   .timeline article {
+    grid-template-columns: 1fr;
+  }
+
+  .room-invite {
     grid-template-columns: 1fr;
   }
 

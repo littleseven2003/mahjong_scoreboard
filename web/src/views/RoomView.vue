@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { toDataURL } from 'qrcode'
 import { api } from '../api/client'
 import { useRoomStore } from '../stores/room'
 
@@ -16,6 +17,9 @@ const activeTransactions = computed(() => state.value?.transactions || [])
 const visibleTransactions = computed(() => activeTransactions.value)
 const dismissedUndoIds = ref<number[]>([])
 const undoDialogTransactionId = ref<number | null>(null)
+const qrDialogOpen = ref(false)
+const qrCodeUrl = ref('')
+const qrError = ref('')
 const allReadyNotified = ref(false)
 const lastRoomStatus = ref('')
 type PromptDialog = {
@@ -76,6 +80,10 @@ const roomIsFull = computed(() => Boolean(room.value && players.value.length >= 
 const allNonOwnersReady = computed(() =>
   roomIsFull.value && nonOwnerPlayers.value.length > 0 && readyPlayers.value.length === nonOwnerPlayers.value.length
 )
+const joinRoomUrl = computed(() => {
+  if (typeof window === 'undefined') return `/room/join?code=${code.value}`
+  return `${window.location.origin}/room/join?code=${code.value}`
+})
 
 onMounted(() => {
   roomStore.loadRoom(code.value)
@@ -434,6 +442,25 @@ async function finish() {
     }
   })
 }
+
+async function openQrDialog() {
+  qrDialogOpen.value = true
+  qrCodeUrl.value = ''
+  qrError.value = ''
+
+  try {
+    qrCodeUrl.value = await toDataURL(joinRoomUrl.value, {
+      width: 320,
+      margin: 2,
+      color: {
+        dark: '#173f32',
+        light: '#ffffff'
+      }
+    })
+  } catch {
+    qrError.value = '二维码生成失败，请直接复制房间号邀请玩家加入'
+  }
+}
 </script>
 
 <template>
@@ -468,6 +495,13 @@ async function finish() {
           <span>{{ players.length }} / {{ room.playerCount }}</span>
         </div>
         <p v-if="roomStore.isOwner && allNonOwnersReady" class="notice-text">所有玩家已准备完毕，可以开始对局了</p>
+        <div class="room-invite">
+          <div>
+            <span>房间号</span>
+            <strong>{{ code }}</strong>
+          </div>
+          <button class="secondary-button compact-button" type="button" @click="openQrDialog">查看二维码</button>
+        </div>
         <div class="list">
           <div v-for="player in players" :key="player.id" class="list-row">
             <span>{{ player.seatNo }} 位</span>
@@ -641,6 +675,23 @@ async function finish() {
         </section>
       </div>
     </template>
+
+    <div v-if="qrDialogOpen" class="modal-backdrop">
+      <section class="modal-panel qr-panel">
+        <h2>扫码加入房间</h2>
+        <p class="modal-message">其他玩家扫码后会打开加入房间页面，并自动填入房间号。</p>
+        <div class="qr-card">
+          <img v-if="qrCodeUrl" :src="qrCodeUrl" alt="加入房间二维码" />
+          <p v-else-if="qrError" class="error-text">{{ qrError }}</p>
+          <p v-else class="muted">正在生成二维码...</p>
+        </div>
+        <div class="invite-link">
+          <span>房间号</span>
+          <strong>{{ code }}</strong>
+        </div>
+        <button class="ghost-button modal-close" type="button" @click="qrDialogOpen = false">关闭</button>
+      </section>
+    </div>
 
     <div v-if="promptDialog" class="modal-backdrop">
       <section class="modal-panel">
