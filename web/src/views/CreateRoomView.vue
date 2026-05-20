@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRoomStore } from '../stores/room'
 
@@ -8,16 +8,14 @@ const roomStore = useRoomStore()
 
 const defaultRoomName = createDefaultRoomName()
 const defaultOwnerNickname = createDefaultNickname()
-const roomNameUsingDefault = ref(true)
-const ownerNicknameUsingDefault = ref(true)
 
 const createForm = reactive({
   playerCount: 4,
-  name: defaultRoomName,
+  name: '',
   initialScore: 1000,
   scoreRate: 1,
   allowNegative: true,
-  ownerNickname: defaultOwnerNickname
+  ownerNickname: ''
 })
 
 const createErrors = reactive({
@@ -36,11 +34,7 @@ function validateCreateForm() {
   clearCreateErrors()
   const initialScore = Number(createForm.initialScore)
   const scoreRate = Number(createForm.scoreRate)
-  applyCreateDefaults()
 
-  if (!createForm.ownerNickname.trim()) {
-    createErrors.ownerNickname = '请填写房主昵称'
-  }
   if (!Number.isInteger(initialScore) || initialScore < 0) {
     createErrors.initialScore = '起始分必须是 0 或正整数'
   }
@@ -54,7 +48,11 @@ function validateCreateForm() {
 async function createRoom() {
   if (!validateCreateForm()) return
   try {
-    const result = await roomStore.createRoom(createForm)
+    const result = await roomStore.createRoom({
+      ...createForm,
+      name: createForm.name.trim() || defaultRoomName,
+      ownerNickname: createForm.ownerNickname.trim() || defaultOwnerNickname
+    })
     router.push(`/room/${result.state.room.code}`)
   } catch (error) {
     const message = error instanceof Error ? error.message : ''
@@ -77,29 +75,6 @@ function createDefaultRoomName() {
 function createDefaultNickname() {
   const suffix = Math.random().toString(36).slice(2, 6).toUpperCase()
   return `玩家${suffix}`
-}
-
-function applyCreateDefaults() {
-  if (roomNameUsingDefault.value || !createForm.name.trim()) {
-    createForm.name = defaultRoomName
-    roomNameUsingDefault.value = true
-  }
-  if (ownerNicknameUsingDefault.value || !createForm.ownerNickname.trim()) {
-    createForm.ownerNickname = defaultOwnerNickname
-    ownerNicknameUsingDefault.value = true
-  }
-}
-
-function clearDefaultRoomName() {
-  if (!roomNameUsingDefault.value) return
-  createForm.name = ''
-  roomNameUsingDefault.value = false
-}
-
-function clearDefaultOwnerNickname() {
-  if (!ownerNicknameUsingDefault.value) return
-  createForm.ownerNickname = ''
-  ownerNicknameUsingDefault.value = false
 }
 </script>
 
@@ -126,18 +101,15 @@ function clearDefaultOwnerNickname() {
         房间名称
         <input
           v-model="createForm.name"
-          placeholder="例如：今晚这桌"
-          @focus="clearDefaultRoomName"
-          @input="roomNameUsingDefault = false"
+          :placeholder="defaultRoomName"
         />
       </label>
       <label>
         房主昵称
         <input
           v-model="createForm.ownerNickname"
-          placeholder="你的昵称"
-          @focus="clearDefaultOwnerNickname"
-          @input="createErrors.ownerNickname = ''; ownerNicknameUsingDefault = false"
+          :placeholder="defaultOwnerNickname"
+          @input="createErrors.ownerNickname = ''"
         />
         <small v-if="createErrors.ownerNickname" class="field-error">{{ createErrors.ownerNickname }}</small>
       </label>

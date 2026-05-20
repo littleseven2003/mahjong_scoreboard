@@ -8,8 +8,7 @@ const roomStore = useRoomStore()
 
 const joinCode = ref('')
 const defaultJoinNickname = createDefaultNickname()
-const joinNickname = ref(defaultJoinNickname)
-const nicknameUsingDefault = ref(true)
+const joinNickname = ref('')
 
 const joinErrors = reactive({
   code: '',
@@ -23,12 +22,8 @@ function clearJoinErrors() {
 
 function validateJoinForm() {
   clearJoinErrors()
-  applyJoinDefaults()
   if (!joinCode.value.trim()) {
     joinErrors.code = '请填写房间号'
-  }
-  if (!joinNickname.value.trim()) {
-    joinErrors.nickname = '请填写玩家昵称'
   }
   return !joinErrors.code && !joinErrors.nickname
 }
@@ -36,7 +31,7 @@ function validateJoinForm() {
 async function joinRoom() {
   if (!validateJoinForm()) return
   try {
-    const result = await roomStore.joinRoom(joinCode.value, joinNickname.value)
+    const result = await roomStore.joinRoom(joinCode.value, joinNickname.value.trim() || defaultJoinNickname)
     router.push(`/room/${result.state.room.code}`)
   } catch (error) {
     const message = error instanceof Error ? error.message : ''
@@ -48,19 +43,6 @@ async function joinRoom() {
 function createDefaultNickname() {
   const suffix = Math.random().toString(36).slice(2, 6).toUpperCase()
   return `玩家${suffix}`
-}
-
-function applyJoinDefaults() {
-  if (nicknameUsingDefault.value || !joinNickname.value.trim()) {
-    joinNickname.value = defaultJoinNickname
-    nicknameUsingDefault.value = true
-  }
-}
-
-function clearDefaultNickname() {
-  if (!nicknameUsingDefault.value) return
-  joinNickname.value = ''
-  nicknameUsingDefault.value = false
 }
 </script>
 
@@ -88,9 +70,8 @@ function clearDefaultNickname() {
         玩家昵称
         <input
           v-model="joinNickname"
-          placeholder="你的昵称"
-          @focus="clearDefaultNickname"
-          @input="joinErrors.nickname = ''; nicknameUsingDefault = false"
+          :placeholder="defaultJoinNickname"
+          @input="joinErrors.nickname = ''"
         />
         <small v-if="joinErrors.nickname" class="field-error">{{ joinErrors.nickname }}</small>
       </label>
