@@ -7,7 +7,9 @@ const router = useRouter()
 const roomStore = useRoomStore()
 
 const joinCode = ref('')
-const joinNickname = ref('')
+const defaultJoinNickname = createDefaultNickname()
+const joinNickname = ref(defaultJoinNickname)
+const nicknameUsingDefault = ref(true)
 
 const joinErrors = reactive({
   code: '',
@@ -21,6 +23,7 @@ function clearJoinErrors() {
 
 function validateJoinForm() {
   clearJoinErrors()
+  applyJoinDefaults()
   if (!joinCode.value.trim()) {
     joinErrors.code = '请填写房间号'
   }
@@ -40,6 +43,24 @@ async function joinRoom() {
     if (message.includes('房间')) joinErrors.code = message
     else if (message.includes('昵称')) joinErrors.nickname = message
   }
+}
+
+function createDefaultNickname() {
+  const suffix = Math.random().toString(36).slice(2, 6).toUpperCase()
+  return `玩家${suffix}`
+}
+
+function applyJoinDefaults() {
+  if (nicknameUsingDefault.value || !joinNickname.value.trim()) {
+    joinNickname.value = defaultJoinNickname
+    nicknameUsingDefault.value = true
+  }
+}
+
+function clearDefaultNickname() {
+  if (!nicknameUsingDefault.value) return
+  joinNickname.value = ''
+  nicknameUsingDefault.value = false
 }
 </script>
 
@@ -65,7 +86,12 @@ async function joinRoom() {
       </label>
       <label>
         玩家昵称
-        <input v-model="joinNickname" placeholder="你的昵称" @input="joinErrors.nickname = ''" />
+        <input
+          v-model="joinNickname"
+          placeholder="你的昵称"
+          @focus="clearDefaultNickname"
+          @input="joinErrors.nickname = ''; nicknameUsingDefault = false"
+        />
         <small v-if="joinErrors.nickname" class="field-error">{{ joinErrors.nickname }}</small>
       </label>
       <button class="primary-button" :disabled="roomStore.loading" @click="joinRoom">加入房间</button>

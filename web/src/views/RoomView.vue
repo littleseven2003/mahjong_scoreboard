@@ -301,14 +301,8 @@ async function submitTransfer() {
 
 function defaultFromPlayerId() {
   if (transferMode.value === 'self' && roomStore.playerId) return roomStore.playerId
-  if (transferMode.value === 'behalf' && roomStore.isOwner) {
-    return defaultBehalfFromPlayerId()
-  }
+  if (transferMode.value === 'behalf' && roomStore.isOwner) return 0
   return roomStore.playerId || players.value[0]?.id || 0
-}
-
-function defaultBehalfFromPlayerId() {
-  return players.value.find((player) => player.id !== roomStore.playerId)?.id || players.value[0]?.id || 0
 }
 
 function resetTransferForm(fromPlayerId = defaultFromPlayerId()) {
@@ -336,7 +330,7 @@ function openBehalfTransferDialog() {
   if (!ensurePlayer() || !roomStore.isOwner) return
 
   transferMode.value = 'behalf'
-  resetTransferForm(defaultBehalfFromPlayerId())
+  resetTransferForm(0)
   transferDialogOpen.value = true
 }
 

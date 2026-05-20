@@ -1,18 +1,23 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRoomStore } from '../stores/room'
 
 const router = useRouter()
 const roomStore = useRoomStore()
 
+const defaultRoomName = createDefaultRoomName()
+const defaultOwnerNickname = createDefaultNickname()
+const roomNameUsingDefault = ref(true)
+const ownerNicknameUsingDefault = ref(true)
+
 const createForm = reactive({
   playerCount: 4,
-  name: '',
+  name: defaultRoomName,
   initialScore: 1000,
   scoreRate: 1,
   allowNegative: true,
-  ownerNickname: ''
+  ownerNickname: defaultOwnerNickname
 })
 
 const createErrors = reactive({
@@ -31,6 +36,7 @@ function validateCreateForm() {
   clearCreateErrors()
   const initialScore = Number(createForm.initialScore)
   const scoreRate = Number(createForm.scoreRate)
+  applyCreateDefaults()
 
   if (!createForm.ownerNickname.trim()) {
     createErrors.ownerNickname = '请填写房主昵称'
@@ -57,6 +63,44 @@ async function createRoom() {
     else if (message.includes('昵称')) createErrors.ownerNickname = message
   }
 }
+
+function createDefaultRoomName() {
+  const date = new Date()
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  const hour = date.getHours()
+  const minute = String(date.getMinutes()).padStart(2, '0')
+  return `${year}年${month}月${day}日 ${hour}:${minute} 的对局`
+}
+
+function createDefaultNickname() {
+  const suffix = Math.random().toString(36).slice(2, 6).toUpperCase()
+  return `玩家${suffix}`
+}
+
+function applyCreateDefaults() {
+  if (roomNameUsingDefault.value || !createForm.name.trim()) {
+    createForm.name = defaultRoomName
+    roomNameUsingDefault.value = true
+  }
+  if (ownerNicknameUsingDefault.value || !createForm.ownerNickname.trim()) {
+    createForm.ownerNickname = defaultOwnerNickname
+    ownerNicknameUsingDefault.value = true
+  }
+}
+
+function clearDefaultRoomName() {
+  if (!roomNameUsingDefault.value) return
+  createForm.name = ''
+  roomNameUsingDefault.value = false
+}
+
+function clearDefaultOwnerNickname() {
+  if (!ownerNicknameUsingDefault.value) return
+  createForm.ownerNickname = ''
+  ownerNicknameUsingDefault.value = false
+}
 </script>
 
 <template>
@@ -80,11 +124,21 @@ async function createRoom() {
       </div>
       <label>
         房间名称
-        <input v-model="createForm.name" placeholder="今晚这桌" />
+        <input
+          v-model="createForm.name"
+          placeholder="例如：今晚这桌"
+          @focus="clearDefaultRoomName"
+          @input="roomNameUsingDefault = false"
+        />
       </label>
       <label>
         房主昵称
-        <input v-model="createForm.ownerNickname" placeholder="你的昵称" @input="createErrors.ownerNickname = ''" />
+        <input
+          v-model="createForm.ownerNickname"
+          placeholder="你的昵称"
+          @focus="clearDefaultOwnerNickname"
+          @input="createErrors.ownerNickname = ''; ownerNicknameUsingDefault = false"
+        />
         <small v-if="createErrors.ownerNickname" class="field-error">{{ createErrors.ownerNickname }}</small>
       </label>
       <div class="grid two">
