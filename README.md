@@ -6,7 +6,7 @@
 
 轻量、实时、适合线下麻将桌的 Web 记分与结算工具。
 
-[![Version](https://img.shields.io/badge/version-v1.0.1-236f4e?style=for-the-badge)](https://github.com/littleseven2003/mahjong_scoreboard/releases)
+[![Version](https://img.shields.io/badge/version-v1.1.0-236f4e?style=for-the-badge)](https://github.com/littleseven2003/mahjong_scoreboard/releases)
 [![License](https://img.shields.io/badge/license-GPL--3.0-f5d17b?style=for-the-badge)](LICENSE)
 [![Docker](https://img.shields.io/badge/deploy-Docker%20Compose-173f32?style=for-the-badge)](docs/deployment.md)
 [![Vue](https://img.shields.io/badge/frontend-Vue%203-42b883?style=for-the-badge)](https://vuejs.org/)
@@ -81,7 +81,7 @@ docker compose up -d --build
 http://服务器局域网IP:8899
 ```
 
-当前发布版本：`v1.0.1`。
+当前发布版本：`v1.1.0`。
 
 ### 开发者
 

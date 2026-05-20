@@ -37,7 +37,7 @@ const transferMode = ref<'self' | 'behalf'>('self')
 const transferForm = reactive({
   fromPlayerId: 0,
   toPlayerId: 0,
-  amount: 0,
+  amount: '',
   remark: ''
 })
 const transferErrors = reactive({
@@ -91,8 +91,8 @@ watch(players, (nextPlayers) => {
   if (!transferForm.fromPlayerId || !transferFromOptions.value.some((player) => player.id === transferForm.fromPlayerId)) {
     transferForm.fromPlayerId = defaultFromPlayerId()
   }
-  if (!transferToOptions.value.some((player) => player.id === transferForm.toPlayerId)) {
-    transferForm.toPlayerId = defaultToPlayerId(transferForm.fromPlayerId)
+  if (transferForm.toPlayerId && !transferToOptions.value.some((player) => player.id === transferForm.toPlayerId)) {
+    transferForm.toPlayerId = 0
   }
 }, { immediate: true })
 
@@ -105,7 +105,7 @@ watch(pendingUndoForMe, (item) => {
 watch(() => transferForm.fromPlayerId, () => {
   transferErrors.players = ''
   if (transferForm.toPlayerId === transferForm.fromPlayerId) {
-    transferForm.toPlayerId = defaultToPlayerId(transferForm.fromPlayerId)
+    transferForm.toPlayerId = 0
   }
 })
 
@@ -269,7 +269,14 @@ async function submitTransfer() {
   transferErrors.players = ''
 
   if (!transferForm.fromPlayerId || !transferForm.toPlayerId || transferForm.fromPlayerId === transferForm.toPlayerId) {
-    transferErrors.players = '请选择不同的扣分玩家和加分玩家'
+    transferErrors.players = transferForm.fromPlayerId
+      ? '请选择加分玩家'
+      : '请选择扣分玩家和加分玩家'
+    return
+  }
+
+  if (!String(transferForm.amount).trim()) {
+    transferErrors.amount = '请输入积分变动数值'
     return
   }
 
@@ -280,14 +287,16 @@ async function submitTransfer() {
   }
 
   const success = await roomStore.applyAction(() => api.transferScore(code.value, {
-    ...transferForm,
+    fromPlayerId: transferForm.fromPlayerId,
+    toPlayerId: transferForm.toPlayerId,
+    amount,
+    remark: transferForm.remark,
     createdBy: roomStore.playerId
   }))
   if (!success) return
 
-  transferForm.remark = ''
-  transferForm.amount = 0
   transferDialogOpen.value = false
+  resetTransferForm()
 }
 
 function defaultFromPlayerId() {
@@ -302,16 +311,12 @@ function defaultBehalfFromPlayerId() {
   return players.value.find((player) => player.id !== roomStore.playerId)?.id || players.value[0]?.id || 0
 }
 
-function defaultToPlayerId(fromPlayerId: number) {
-  return players.value.find((player) => player.id !== fromPlayerId)?.id || 0
-}
-
 function resetTransferForm(fromPlayerId = defaultFromPlayerId()) {
   transferErrors.amount = ''
   transferErrors.players = ''
   transferForm.fromPlayerId = fromPlayerId
-  transferForm.toPlayerId = defaultToPlayerId(fromPlayerId)
-  transferForm.amount = 0
+  transferForm.toPlayerId = 0
+  transferForm.amount = ''
   transferForm.remark = ''
 }
 
@@ -350,7 +355,7 @@ function selectFromPlayer(playerId: number) {
 
   transferForm.fromPlayerId = playerId
   if (transferForm.toPlayerId === playerId) {
-    transferForm.toPlayerId = defaultToPlayerId(playerId)
+    transferForm.toPlayerId = 0
   }
 }
 
@@ -622,11 +627,12 @@ async function finish() {
             <label>
               分数
               <input
-                v-model.number="transferForm.amount"
+                v-model="transferForm.amount"
                 type="number"
                 inputmode="numeric"
                 min="0"
                 step="1"
+                placeholder="请输入积分变动数值"
                 @input="transferErrors.amount = ''"
               />
               <small v-if="transferErrors.amount" class="field-error">{{ transferErrors.amount }}</small>
