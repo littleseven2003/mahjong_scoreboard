@@ -84,7 +84,10 @@ onMounted(() => {
 <template>
   <main class="app-shell">
     <header class="home-hero">
-      <AppLogo />
+      <div class="home-brand-row">
+        <AppLogo />
+        <button class="ghost-button compact-button home-admin-button" type="button" @click="adminDialogOpen = true">管理</button>
+      </div>
       <p class="home-subtitle">为线下麻将桌准备的轻量记分工具，支持创建房间、加入对局、准备开局、流水撤销和历史结算。</p>
       <div class="home-highlight-row">
         <span v-for="item in homeHighlights" :key="item">{{ item }}</span>
@@ -93,7 +96,6 @@ onMounted(() => {
         <RouterLink class="primary-button" to="/room/create">创建房间</RouterLink>
         <RouterLink class="secondary-button" to="/room/join">加入房间</RouterLink>
         <RouterLink class="ghost-button home-history-link" to="/history">历史记录</RouterLink>
-        <button class="ghost-button" type="button" @click="adminDialogOpen = true">管理</button>
       </div>
     </header>
 
@@ -149,9 +151,15 @@ onMounted(() => {
     </footer>
 
     <div v-if="adminDialogOpen" class="modal-backdrop">
-      <section class="modal-card">
+      <section class="modal-panel">
         <h2>管理员验证</h2>
-        <p class="helper-text">请输入服务端配置的管理员密码。</p>
+        <p class="modal-message">请输入服务端配置的管理员密码，验证通过后进入管理中心。</p>
+        <div class="confirm-summary">
+          <span>入口</span>
+          <strong>管理中心</strong>
+          <span>凭据</span>
+          <strong>服务端环境变量 ADMIN_PASSWORD</strong>
+        </div>
         <label>
           <span>管理员密码</span>
           <input

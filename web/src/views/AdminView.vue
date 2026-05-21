@@ -26,6 +26,14 @@ const statusText = {
 }
 
 const sortedRooms = computed(() => rooms.value)
+const currentMaintenance = computed(() => summary.value?.maintenance || {
+  cleanupEnabled: false,
+  cleanupFinishedDays: 30,
+  cleanupIntervalHours: 24
+})
+const cleanupStatusText = computed(() => currentMaintenance.value.cleanupEnabled ? '运行中' : '未启用')
+const cleanupScopeText = computed(() => `已结算且超过 ${currentMaintenance.value.cleanupFinishedDays} 天的对局`)
+const cleanupIntervalText = computed(() => `每 ${currentMaintenance.value.cleanupIntervalHours} 小时检查一次`)
 
 function requireToken() {
   if (!token.value) {
@@ -178,25 +186,44 @@ onMounted(loadAdminData)
     <section class="panel">
       <div class="section-title">
         <h2>定时清理</h2>
-        <span>{{ maintenanceForm.cleanupEnabled ? '已启用' : '未启用' }}</span>
+        <span>{{ cleanupStatusText }}</span>
       </div>
-      <label class="toggle-row">
-        <span>自动清理已结束对局</span>
-        <input v-model="maintenanceForm.cleanupEnabled" type="checkbox">
-      </label>
-      <div class="form-grid two">
-        <label>
-          <span>保留天数</span>
-          <input v-model.number="maintenanceForm.cleanupFinishedDays" type="number" min="1" max="3650">
-        </label>
-        <label>
-          <span>检查间隔（小时）</span>
-          <input v-model.number="maintenanceForm.cleanupIntervalHours" type="number" min="1" max="720">
-        </label>
+      <div class="maintenance-overview">
+        <article>
+          <span>当前状态</span>
+          <strong>{{ cleanupStatusText }}</strong>
+        </article>
+        <article>
+          <span>清理范围</span>
+          <strong>{{ cleanupScopeText }}</strong>
+        </article>
+        <article>
+          <span>执行频率</span>
+          <strong>{{ cleanupIntervalText }}</strong>
+        </article>
       </div>
-      <div class="action-grid two">
-        <button class="primary-button" :disabled="loading" @click="saveMaintenance">保存配置</button>
-        <button class="secondary-button" :disabled="loading" @click="runCleanup">立即清理</button>
+      <div class="maintenance-editor">
+        <label class="toggle-card">
+          <input v-model="maintenanceForm.cleanupEnabled" type="checkbox">
+          <span>
+            <strong>启用自动清理</strong>
+            <small>只清理已结算对局，不影响等待中或进行中的房间。</small>
+          </span>
+        </label>
+        <div class="form-grid two">
+          <label>
+            <span>已结束对局保留天数</span>
+            <input v-model.number="maintenanceForm.cleanupFinishedDays" type="number" min="1" max="3650">
+          </label>
+          <label>
+            <span>自动检查间隔（小时）</span>
+            <input v-model.number="maintenanceForm.cleanupIntervalHours" type="number" min="1" max="720">
+          </label>
+        </div>
+        <div class="action-grid two">
+          <button class="primary-button" :disabled="loading" @click="saveMaintenance">保存清理配置</button>
+          <button class="secondary-button" :disabled="loading" @click="runCleanup">按当前配置立即清理</button>
+        </div>
       </div>
       <p class="helper-text">当前仅自动清理已结算且超过保留天数的对局。直接删除单条数据需要在下方手动确认。</p>
     </section>

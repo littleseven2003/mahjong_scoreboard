@@ -117,10 +117,18 @@ h2 {
   line-height: 1.7;
 }
 
+.home-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .app-logo {
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
 }
 
 .app-logo img {
@@ -135,6 +143,8 @@ h2 {
 .app-logo strong,
 .app-logo span {
   display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .app-logo strong {
@@ -148,9 +158,14 @@ h2 {
   font-weight: 800;
 }
 
+.home-admin-button {
+  flex: 0 0 auto;
+  margin-top: 0;
+}
+
 .home-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
@@ -829,15 +844,65 @@ button:disabled {
   line-height: 1;
 }
 
-.toggle-row {
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  min-height: 48px;
+.maintenance-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.toggle-row input {
+.maintenance-overview article {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #dde5d9;
+  border-radius: 8px;
+  background: #f8faf7;
+}
+
+.maintenance-overview span,
+.toggle-card small {
+  color: #67786d;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.maintenance-overview strong {
+  min-width: 0;
+  color: #173f32;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.maintenance-editor {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.toggle-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  margin-top: 0;
+  padding: 12px;
+  border: 1px solid #dfe7dc;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.toggle-card input {
   width: 22px;
   min-height: 22px;
+}
+
+.toggle-card span {
+  display: grid;
+  gap: 4px;
+}
+
+.toggle-card strong {
+  color: #173f32;
 }
 
 .admin-room-list {
@@ -951,6 +1016,27 @@ button:disabled {
   line-height: 1.6;
 }
 
+.confirm-summary {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid #e0e7dd;
+  border-radius: 8px;
+  background: #f8faf7;
+}
+
+.confirm-summary span {
+  color: #67786d;
+  font-weight: 700;
+}
+
+.confirm-summary strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .qr-panel,
 .scanner-panel {
   text-align: center;
@@ -1042,6 +1128,11 @@ button:disabled {
     height: 64px;
   }
 
+  .home-admin-button {
+    min-height: 34px;
+    padding: 0 10px;
+  }
+
   .home-info-grid {
     grid-template-columns: 1fr;
   }
@@ -1058,6 +1149,10 @@ button:disabled {
 
   .admin-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .maintenance-overview {
+    grid-template-columns: 1fr;
   }
 
   .admin-room-item {
