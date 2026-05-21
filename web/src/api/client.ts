@@ -106,11 +106,11 @@ export interface AdminCleanupResult {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(path, {
+    ...options,
     headers: {
       'Content-Type': 'application/json',
       ...options.headers
-    },
-    ...options
+    }
   })
 
   const data = await response.json().catch(() => ({}))

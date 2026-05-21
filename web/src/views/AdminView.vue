@@ -13,6 +13,11 @@ const loading = ref(false)
 const error = ref('')
 const notice = ref('')
 const deleteTarget = ref<AdminRoom | null>(null)
+const savedMaintenance = ref<AdminMaintenanceSettings>({
+  cleanupEnabled: false,
+  cleanupFinishedDays: 30,
+  cleanupIntervalHours: 24
+})
 const maintenanceForm = reactive<AdminMaintenanceSettings>({
   cleanupEnabled: false,
   cleanupFinishedDays: 30,
@@ -26,14 +31,14 @@ const statusText = {
 }
 
 const sortedRooms = computed(() => rooms.value)
-const currentMaintenance = computed(() => summary.value?.maintenance || {
-  cleanupEnabled: false,
-  cleanupFinishedDays: 30,
-  cleanupIntervalHours: 24
-})
+const currentMaintenance = computed(() => savedMaintenance.value)
 const cleanupStatusText = computed(() => currentMaintenance.value.cleanupEnabled ? '运行中' : '未启用')
-const cleanupScopeText = computed(() => `已结算且超过 ${currentMaintenance.value.cleanupFinishedDays} 天的对局`)
-const cleanupIntervalText = computed(() => `每 ${currentMaintenance.value.cleanupIntervalHours} 小时检查一次`)
+const cleanupScopeText = computed(() =>
+  currentMaintenance.value.cleanupEnabled ? `已结算且超过 ${currentMaintenance.value.cleanupFinishedDays} 天的对局` : '未启用'
+)
+const cleanupIntervalText = computed(() =>
+  currentMaintenance.value.cleanupEnabled ? `每 ${currentMaintenance.value.cleanupIntervalHours} 小时检查一次` : '未启用'
+)
 
 function requireToken() {
   if (!token.value) {
@@ -44,6 +49,7 @@ function requireToken() {
 }
 
 function applyMaintenance(settings: AdminMaintenanceSettings) {
+  savedMaintenance.value = { ...settings }
   maintenanceForm.cleanupEnabled = settings.cleanupEnabled
   maintenanceForm.cleanupFinishedDays = settings.cleanupFinishedDays
   maintenanceForm.cleanupIntervalHours = settings.cleanupIntervalHours
@@ -87,14 +93,21 @@ async function saveMaintenance() {
   error.value = ''
   notice.value = ''
   try {
-    const settings = await api.updateAdminMaintenance(token.value, {
-      cleanupEnabled: maintenanceForm.cleanupEnabled,
+    const payload = {
+      cleanupEnabled: Boolean(maintenanceForm.cleanupEnabled),
       cleanupFinishedDays: Number(maintenanceForm.cleanupFinishedDays),
       cleanupIntervalHours: Number(maintenanceForm.cleanupIntervalHours)
+    }
+    const settings = await api.updateAdminMaintenance(token.value, {
+      cleanupEnabled: payload.cleanupEnabled,
+      cleanupFinishedDays: payload.cleanupFinishedDays,
+      cleanupIntervalHours: payload.cleanupIntervalHours
     })
     applyMaintenance(settings)
     notice.value = '清理任务配置已保存'
-    await loadAdminData()
+    const nextSummary = await api.adminSummary(token.value)
+    summary.value = nextSummary
+    savedMaintenance.value = { ...settings }
   } catch (err) {
     error.value = err instanceof Error ? err.message : '保存配置失败'
   } finally {
@@ -301,9 +314,9 @@ onMounted(loadAdminData)
     </section>
 
     <div v-if="deleteTarget" class="modal-backdrop">
-      <section class="modal-card">
+      <section class="modal-panel">
         <h2>删除对局</h2>
-        <p class="helper-text">删除后会同时删除该对局的玩家、流水和结算数据，此操作不可恢复。</p>
+        <p class="modal-message">删除后会同时删除该对局的玩家、流水和结算数据，此操作不可恢复。</p>
         <div class="confirm-summary">
           <span>房间</span>
           <strong>{{ deleteTarget.name || deleteTarget.code }}</strong>
