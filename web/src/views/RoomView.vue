@@ -693,7 +693,13 @@ async function openQrDialog() {
               >
                 {{ digit }}
               </button>
-              <button type="button" class="keypad-action" @click="backspaceTransferAmount">退格</button>
+              <button type="button" class="keypad-action icon-key" aria-label="退格" title="退格" @click="backspaceTransferAmount">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M21 5H9L3 12l6 7h12V5Z" />
+                  <path d="m12 9 6 6" />
+                  <path d="m18 9-6 6" />
+                </svg>
+              </button>
               <button type="button" class="keypad-action" @click="amountKeypadOpen = false">收回</button>
             </div>
             <label>
