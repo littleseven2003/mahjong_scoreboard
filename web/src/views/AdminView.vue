@@ -213,11 +213,23 @@ onMounted(loadAdminData)
         <div class="form-grid two">
           <label>
             <span>已结束对局保留天数</span>
-            <input v-model.number="maintenanceForm.cleanupFinishedDays" type="number" min="1" max="3650">
+            <input
+              v-model.number="maintenanceForm.cleanupFinishedDays"
+              type="number"
+              min="1"
+              max="3650"
+              :disabled="!maintenanceForm.cleanupEnabled"
+            >
           </label>
           <label>
             <span>自动检查间隔（小时）</span>
-            <input v-model.number="maintenanceForm.cleanupIntervalHours" type="number" min="1" max="720">
+            <input
+              v-model.number="maintenanceForm.cleanupIntervalHours"
+              type="number"
+              min="1"
+              max="720"
+              :disabled="!maintenanceForm.cleanupEnabled"
+            >
           </label>
         </div>
         <div class="action-grid two">

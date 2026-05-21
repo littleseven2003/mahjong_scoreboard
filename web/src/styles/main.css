@@ -297,6 +297,14 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(35, 111, 78, 0.14);
 }
 
+input:disabled,
+select:disabled {
+  border-color: #d9e0d8;
+  background: #eef3ed;
+  color: #8a9a90;
+  cursor: not-allowed;
+}
+
 .code-input {
   text-transform: uppercase;
 }
