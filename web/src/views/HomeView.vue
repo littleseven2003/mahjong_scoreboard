@@ -8,7 +8,7 @@ const router = useRouter()
 const CONTINUE_TIMEOUT_MS = 12 * 60 * 60 * 1000
 const githubUrl = 'https://github.com/littleseven2003/mahjong_scoreboard'
 const author = 'littleseven2003'
-const version = 'v1.3.1-admin-alpha.1'
+const version = 'v1.2.2-server-alpha'
 const homeHighlights = ['实时同步', '双方确认撤销', 'Docker 部署']
 
 type ContinueRoom = {
