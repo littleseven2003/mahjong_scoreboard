@@ -60,6 +60,10 @@ function removeContinueRoom(code: string) {
   continuableRooms.value = continuableRooms.value.filter((item) => item.state.room.code !== code)
 }
 
+function openUserNotice() {
+  window.dispatchEvent(new CustomEvent('quezhuoji:open-user-notice'))
+}
+
 async function verifyAdmin() {
   adminLoading.value = true
   adminError.value = ''
@@ -148,6 +152,7 @@ onMounted(() => {
       <span>作者：{{ author }}</span>
       <span>版本：{{ version }}</span>
       <span>协议：GPL-3.0</span>
+      <button class="footer-link-button" type="button" @click="openUserNotice">用户须知</button>
     </footer>
 
     <div v-if="adminDialogOpen" class="modal-backdrop">

@@ -828,6 +828,22 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.footer-link-button {
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #236f4e;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  text-align: left;
+}
+
+.footer-link-button:hover {
+  text-decoration: underline;
+}
+
 .admin-shell {
   width: min(100%, 960px);
 }

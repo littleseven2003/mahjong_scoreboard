@@ -1,29 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-const NOTICE_DATE_KEY = 'quezhuoji_admin_alpha_notice_date'
-const NOTICE_SUPPRESS_UNTIL_KEY = 'quezhuoji_admin_alpha_notice_suppress_until'
 const CLOSE_DELAY_SECONDS = 5
-const SUPPRESS_DAYS = 7
 
 const noticeOpen = ref(false)
 const secondsLeft = ref(CLOSE_DELAY_SECONDS)
-const suppressNotice = ref(false)
+const noticeForced = ref(false)
 let countdownTimer: number | null = null
 
-const closeDisabled = computed(() => secondsLeft.value > 0)
+const closeDisabled = computed(() => noticeForced.value && secondsLeft.value > 0)
 const closeText = computed(() => closeDisabled.value ? `${secondsLeft.value} 秒后可关闭` : '我已了解')
-
-function todayKey() {
-  return new Date().toISOString().slice(0, 10)
-}
-
-function shouldShowNotice() {
-  const suppressUntil = Number(localStorage.getItem(NOTICE_SUPPRESS_UNTIL_KEY) || 0)
-  if (suppressUntil && Date.now() < suppressUntil) return false
-
-  return localStorage.getItem(NOTICE_DATE_KEY) !== todayKey()
-}
 
 function startCountdown() {
   secondsLeft.value = CLOSE_DELAY_SECONDS
@@ -37,30 +23,39 @@ function startCountdown() {
   }, 1000)
 }
 
+function openNotice(force = false) {
+  noticeForced.value = force
+  noticeOpen.value = true
+  if (force) {
+    startCountdown()
+    return
+  }
+  secondsLeft.value = 0
+  if (countdownTimer) {
+    window.clearInterval(countdownTimer)
+    countdownTimer = null
+  }
+}
+
 function closeNotice() {
   if (closeDisabled.value) return
-
-  localStorage.setItem(NOTICE_DATE_KEY, todayKey())
-  if (suppressNotice.value) {
-    localStorage.setItem(
-      NOTICE_SUPPRESS_UNTIL_KEY,
-      String(Date.now() + SUPPRESS_DAYS * 24 * 60 * 60 * 1000)
-    )
-  }
   noticeOpen.value = false
 }
 
+function handleManualNotice() {
+  openNotice(false)
+}
+
 onMounted(() => {
-  if (shouldShowNotice()) {
-    noticeOpen.value = true
-    startCountdown()
-  }
+  window.addEventListener('quezhuoji:open-user-notice', handleManualNotice)
+  openNotice(true)
 })
 
 onUnmounted(() => {
   if (countdownTimer) {
     window.clearInterval(countdownTimer)
   }
+  window.removeEventListener('quezhuoji:open-user-notice', handleManualNotice)
 })
 </script>
 
@@ -96,10 +91,6 @@ onUnmounted(() => {
           <span>本软件遵循 GPL-3.0 开源协议。未经合规授权，不得将本软件用于商业售卖、封闭分发或其他违反开源协议的用途；如进行二次开发、修改或再分发，应继续遵守相应开源协议要求。</span>
         </article>
       </div>
-      <label class="check-row notice-check">
-        <input v-model="suppressNotice" type="checkbox">
-        <span>7 天内不再显示</span>
-      </label>
       <button class="primary-button" :disabled="closeDisabled" @click="closeNotice">{{ closeText }}</button>
     </section>
   </div>
