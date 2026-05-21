@@ -677,6 +677,61 @@ button:disabled {
   color: #ffffff;
 }
 
+.amount-field {
+  display: grid;
+  gap: 8px;
+}
+
+.amount-display {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid #c9d6c9;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #17201a;
+  text-align: left;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.amount-display.placeholder {
+  color: #8fa096;
+  font-weight: 700;
+}
+
+.numeric-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #dfe7dc;
+  border-radius: 8px;
+  background: #f8faf7;
+}
+
+.numeric-keypad button {
+  min-height: 46px;
+  border: 1px solid #c9d6c9;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #173f32;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.numeric-keypad button:active {
+  transform: translateY(1px);
+}
+
+.numeric-keypad .keypad-action {
+  background: #edf3ed;
+  color: #2d4435;
+  font-size: 15px;
+}
+
 .project-footer {
   display: grid;
   gap: 6px;

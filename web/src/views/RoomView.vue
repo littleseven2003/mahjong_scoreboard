@@ -37,6 +37,8 @@ type PromptDialog = {
 const promptDialog = ref<PromptDialog | null>(null)
 const transferDialogOpen = ref(false)
 const transferMode = ref<'self' | 'behalf'>('self')
+const amountKeypadOpen = ref(false)
+const amountKeypadDigits = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
 
 const transferForm = reactive({
   fromPlayerId: 0,
@@ -320,6 +322,7 @@ function resetTransferForm(fromPlayerId = defaultFromPlayerId()) {
   transferForm.toPlayerId = 0
   transferForm.amount = ''
   transferForm.remark = ''
+  amountKeypadOpen.value = false
 }
 
 function playerOptionLabel(player: { id: number; nickname: string }) {
@@ -331,6 +334,7 @@ function openTransferDialog(fromPlayerId = roomStore.playerId || 0) {
 
   transferMode.value = roomStore.isOwner && fromPlayerId !== roomStore.playerId ? 'behalf' : 'self'
   resetTransferForm(fromPlayerId || defaultFromPlayerId())
+  amountKeypadOpen.value = true
   transferDialogOpen.value = true
 }
 
@@ -339,6 +343,7 @@ function openBehalfTransferDialog() {
 
   transferMode.value = 'behalf'
   resetTransferForm(0)
+  amountKeypadOpen.value = true
   transferDialogOpen.value = true
 }
 
@@ -370,6 +375,21 @@ function selectToPlayer(playerId: number) {
 
 function isTransferToDisabled(playerId: number) {
   return playerId === transferForm.fromPlayerId
+}
+
+function appendTransferAmountDigit(digit: string) {
+  transferErrors.amount = ''
+  if (transferForm.amount === '0') {
+    transferForm.amount = digit
+    return
+  }
+
+  transferForm.amount = `${transferForm.amount}${digit}`.replace(/^0+(?=\d)/, '')
+}
+
+function backspaceTransferAmount() {
+  transferErrors.amount = ''
+  transferForm.amount = transferForm.amount.slice(0, -1)
 }
 
 function canConfirmUndo(item: { fromPlayerId: number; toPlayerId: number; isReverted: boolean }) {
@@ -652,19 +672,30 @@ async function openQrDialog() {
               </div>
             </div>
             <small v-if="transferErrors.players" class="field-error form-error">{{ transferErrors.players }}</small>
-            <label>
+            <label class="amount-field">
               分数
-              <input
-                v-model="transferForm.amount"
-                type="number"
-                inputmode="numeric"
-                min="0"
-                step="1"
-                placeholder="请输入积分变动数值"
-                @input="transferErrors.amount = ''"
-              />
+              <button
+                type="button"
+                class="amount-display"
+                :class="{ placeholder: !transferForm.amount }"
+                @click="amountKeypadOpen = true"
+              >
+                {{ transferForm.amount || '请输入积分变动数值' }}
+              </button>
               <small v-if="transferErrors.amount" class="field-error">{{ transferErrors.amount }}</small>
             </label>
+            <div v-if="amountKeypadOpen" class="numeric-keypad" aria-label="积分数字键盘">
+              <button
+                v-for="digit in amountKeypadDigits"
+                :key="digit"
+                type="button"
+                @click="appendTransferAmountDigit(digit)"
+              >
+                {{ digit }}
+              </button>
+              <button type="button" class="keypad-action" @click="backspaceTransferAmount">退格</button>
+              <button type="button" class="keypad-action" @click="amountKeypadOpen = false">收回</button>
+            </div>
             <label>
               备注
               <input v-model="transferForm.remark" placeholder="点炮、杠分、其他" />
