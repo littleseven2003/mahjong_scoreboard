@@ -66,6 +66,44 @@ export interface RoomState {
   settlements: Settlement[]
 }
 
+export interface AdminSummary {
+  rooms: number
+  waitingRooms: number
+  playingRooms: number
+  finishedRooms: number
+  players: number
+  transactions: number
+  settlements: number
+  maintenance: AdminMaintenanceSettings
+}
+
+export interface AdminRoom {
+  id: number
+  code: string
+  name: string
+  status: Room['status']
+  configuredPlayerCount: number
+  playerCount: number
+  transactionCount: number
+  playerNames: string
+  createdAt: string
+  startedAt: string | null
+  finishedAt: string | null
+  lastActiveAt: string
+}
+
+export interface AdminMaintenanceSettings {
+  cleanupEnabled: boolean
+  cleanupFinishedDays: number
+  cleanupIntervalHours: number
+}
+
+export interface AdminCleanupResult {
+  deletedCount: number
+  deletedRoomCodes: string[]
+  cutoff: string
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(path, {
     headers: {
@@ -164,6 +202,51 @@ export const api = {
   },
   historyDetail(id: string) {
     return request<RoomState>(`/api/history/${id}`)
+  },
+  adminLogin(password: string) {
+    return request<{ token: string; expiresAt: string }>('/api/admin/login', {
+      method: 'POST',
+      body: JSON.stringify({ password })
+    })
+  },
+  adminSummary(token: string) {
+    return request<AdminSummary>('/api/admin/summary', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  },
+  adminRooms(token: string) {
+    return request<AdminRoom[]>('/api/admin/rooms', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  },
+  adminRoomDetail(token: string, id: number) {
+    return request<RoomState>(`/api/admin/rooms/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  },
+  deleteAdminRoom(token: string, id: number) {
+    return request<{ ok: true; roomId: number; roomCode: string }>(`/api/admin/rooms/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  },
+  adminMaintenance(token: string) {
+    return request<AdminMaintenanceSettings>('/api/admin/maintenance', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+  },
+  updateAdminMaintenance(token: string, payload: AdminMaintenanceSettings) {
+    return request<AdminMaintenanceSettings>('/api/admin/maintenance', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload)
+    })
+  },
+  runAdminCleanup(token: string) {
+    return request<AdminCleanupResult>('/api/admin/maintenance/cleanup', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    })
   }
 }
 

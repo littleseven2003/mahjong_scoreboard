@@ -5,6 +5,7 @@ import JoinRoomView from './views/JoinRoomView.vue'
 import RoomView from './views/RoomView.vue'
 import HistoryView from './views/HistoryView.vue'
 import HistoryDetailView from './views/HistoryDetailView.vue'
+import AdminView from './views/AdminView.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -17,6 +18,7 @@ export const router = createRouter({
     { path: '/room/join', component: JoinRoomView },
     { path: '/room/:code', component: RoomView, props: true },
     { path: '/history', component: HistoryView },
-    { path: '/history/:id', component: HistoryDetailView, props: true }
+    { path: '/history/:id', component: HistoryDetailView, props: true },
+    { path: '/admin', component: AdminView }
   ]
 })

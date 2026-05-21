@@ -6,7 +6,7 @@
 
 轻量、实时、适合线下麻将桌的 Web 记分与结算工具。
 
-[![Version](https://img.shields.io/badge/version-v1.2.1-236f4e?style=for-the-badge)](https://github.com/littleseven2003/mahjong_scoreboard/releases)
+[![Version](https://img.shields.io/badge/version-v1.3.0--admin--alpha.1-236f4e?style=for-the-badge)](https://github.com/littleseven2003/mahjong_scoreboard/releases)
 [![License](https://img.shields.io/badge/license-GPL--3.0-f5d17b?style=for-the-badge)](LICENSE)
 [![Docker](https://img.shields.io/badge/deploy-Docker%20Compose-173f32?style=for-the-badge)](docs/deployment.md)
 [![Vue](https://img.shields.io/badge/frontend-Vue%203-42b883?style=for-the-badge)](https://vuejs.org/)
@@ -43,6 +43,7 @@
 | 双方撤销 | 指定流水需要相关双方确认后才会回滚分数 |
 | 继续对局 | 首页可重新进入当前浏览器加入过的未完成对局 |
 | 历史结算 | 房主结束对局后生成结算，并保留历史详情 |
+| 管理实验 | 通过环境变量启用管理员入口，查看数据并清理已结束对局 |
 
 ## 功能范围
 
@@ -58,8 +59,9 @@
 - 相关双方确认后撤销指定流水
 - 房主结束对局并生成结算
 - 查看历史对局和历史详情
+- 实验性管理员入口、数据查看、单条删除和已结束对局定时清理
 
-当前不包含完整麻将规则、自动算番、用户登录、微信分享、公网访问、排行榜或金额支付能力。本项目只用于娱乐积分记录与结算辅助。
+当前不包含完整麻将规则、自动算番、普通用户登录、微信分享、公网访问、排行榜或金额支付能力。本项目只用于娱乐积分记录与结算辅助。
 
 ## 快速开始
 
@@ -82,7 +84,16 @@ docker compose up -d --build
 http://服务器局域网IP:8899
 ```
 
-当前发布版本：`v1.2.1`。
+当前分支版本：`v1.3.0-admin-alpha.1`。该版本包含管理员与数据管理实验功能，和正式稳定版区分发布。
+
+如需启用管理入口，请在后端环境变量中配置管理员密码：
+
+```bash
+ADMIN_PASSWORD=请替换为高强度密码
+ADMIN_SESSION_SECRET=请替换为随机长字符串
+```
+
+未配置 `ADMIN_PASSWORD` 时，首页“管理”入口会无法完成验证。
 
 ### 开发者
 

@@ -150,11 +150,11 @@ h2 {
 
 .home-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
-.home-actions .ghost-button {
+.home-actions .home-history-link {
   grid-column: 1 / -1;
   width: 100%;
 }
@@ -292,6 +292,15 @@ select:focus {
 }
 
 .grid.two {
+  grid-template-columns: 1fr 1fr;
+}
+
+.form-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.form-grid.two {
   grid-template-columns: 1fr 1fr;
 }
 
@@ -788,6 +797,129 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.admin-shell {
+  width: min(100%, 960px);
+}
+
+.admin-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.admin-metrics article {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #dde5d9;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.admin-metrics span {
+  color: #67786d;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-metrics strong {
+  color: #173f32;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.toggle-row {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  min-height: 48px;
+}
+
+.toggle-row input {
+  width: 22px;
+  min-height: 22px;
+}
+
+.admin-room-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.admin-room-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #e0e7dd;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.admin-room-item.active {
+  border-color: #236f4e;
+  box-shadow: 0 0 0 3px rgba(35, 111, 78, 0.12);
+}
+
+.admin-room-item > button:first-child {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.admin-room-item strong,
+.admin-room-item span,
+.admin-room-item small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-room-item span,
+.admin-room-item small {
+  color: #67786d;
+  font-weight: 700;
+}
+
+.admin-detail-grid {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid #e0e7dd;
+  border-radius: 8px;
+  background: #f8faf7;
+}
+
+.admin-detail-grid span {
+  color: #67786d;
+  font-weight: 700;
+}
+
+.admin-detail-grid strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-subsection {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.admin-subsection h3 {
+  margin: 0;
+  color: #173f32;
+  font-size: 16px;
+}
+
 .undo-detail {
   display: grid;
   grid-template-columns: 88px 1fr;
@@ -918,8 +1050,17 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .form-grid.two,
   .action-grid.two,
   .player-choice-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-room-item {
     grid-template-columns: 1fr;
   }
 

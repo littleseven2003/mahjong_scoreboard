@@ -4,7 +4,7 @@
 
 ## 本地启动
 
-面向使用者的部署包以 GitHub Release 为准。开发者可以直接克隆仓库进行本地开发；发布版本当前为 `v1.2.1`。
+面向使用者的部署包以 GitHub Release 为准。开发者可以直接克隆仓库进行本地开发；当前分支版本为 `v1.3.0-admin-alpha.1`，用于管理员与数据管理实验功能。
 
 安装依赖：
 
@@ -22,6 +22,12 @@ npm run dev:server
 
 ```text
 http://localhost:3100
+```
+
+如需本地测试管理员入口，启动后端前配置：
+
+```bash
+ADMIN_PASSWORD=dev-password ADMIN_SESSION_SECRET=dev-secret npm run dev:server
 ```
 
 启动前端：
@@ -65,6 +71,12 @@ server/src/service.js
 ```
 
 负责房间、玩家、记分、撤销、结算、历史记录等核心业务逻辑。分数计算应尽量集中在这里。
+
+```text
+server/src/admin.js
+```
+
+负责管理员登录 Token、管理数据查询、单条对局删除和已结束对局清理配置。
 
 ```text
 server/src/index.js

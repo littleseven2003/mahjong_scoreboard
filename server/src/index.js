@@ -2,6 +2,17 @@ import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import { Server } from 'socket.io'
 import {
+  cleanupFinishedRooms,
+  createAdminToken,
+  deleteAdminRoom,
+  getAdminRoomDetail,
+  getAdminSummary,
+  getMaintenanceSettings,
+  listAdminRooms,
+  updateMaintenanceSettings,
+  verifyAdminToken
+} from './admin.js'
+import {
   cancelTransactionUndo,
   confirmTransactionUndo,
   createRoom,
@@ -19,6 +30,7 @@ import {
 
 const port = Number(process.env.PORT || 3100)
 const app = Fastify({ logger: true })
+let cleanupTimer = null
 
 await app.register(cors, {
   origin: process.env.CORS_ORIGIN || true,
@@ -49,11 +61,110 @@ function sendError(reply, error) {
   })
 }
 
+function requireAdmin(request) {
+  const auth = request.headers.authorization || ''
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : ''
+  return verifyAdminToken(token)
+}
+
+function scheduleCleanup() {
+  if (cleanupTimer) {
+    clearInterval(cleanupTimer)
+    cleanupTimer = null
+  }
+
+  const settings = getMaintenanceSettings()
+  if (!settings.cleanupEnabled) return
+
+  const intervalMs = settings.cleanupIntervalHours * 60 * 60 * 1000
+  cleanupTimer = setInterval(() => {
+    try {
+      const result = cleanupFinishedRooms()
+      app.log.info({ result }, 'admin cleanup finished')
+    } catch (error) {
+      app.log.error({ error }, 'admin cleanup failed')
+    }
+  }, intervalMs)
+}
+
 app.get('/api/health', async () => ({
   ok: true,
   service: 'mahjong_scoreboard',
   time: new Date().toISOString()
 }))
+
+app.post('/api/admin/login', async (request, reply) => {
+  try {
+    reply.send(createAdminToken(request.body?.password))
+  } catch (error) {
+    sendError(reply, error)
+  }
+})
+
+app.get('/api/admin/summary', async (request, reply) => {
+  try {
+    requireAdmin(request)
+    reply.send(getAdminSummary())
+  } catch (error) {
+    sendError(reply, error)
+  }
+})
+
+app.get('/api/admin/rooms', async (request, reply) => {
+  try {
+    requireAdmin(request)
+    reply.send(listAdminRooms())
+  } catch (error) {
+    sendError(reply, error)
+  }
+})
+
+app.get('/api/admin/rooms/:id', async (request, reply) => {
+  try {
+    requireAdmin(request)
+    reply.send(getAdminRoomDetail(request.params.id))
+  } catch (error) {
+    sendError(reply, error)
+  }
+})
+
+app.delete('/api/admin/rooms/:id', async (request, reply) => {
+  try {
+    requireAdmin(request)
+    reply.send(deleteAdminRoom(request.params.id))
+  } catch (error) {
+    sendError(reply, error)
+  }
+})
+
+app.get('/api/admin/maintenance', async (request, reply) => {
+  try {
+    requireAdmin(request)
+    reply.send(getMaintenanceSettings())
+  } catch (error) {
+    sendError(reply, error)
+  }
+})
+
+app.put('/api/admin/maintenance', async (request, reply) => {
+  try {
+    requireAdmin(request)
+    const settings = updateMaintenanceSettings(request.body || {})
+    scheduleCleanup()
+    reply.send(settings)
+  } catch (error) {
+    sendError(reply, error)
+  }
+})
+
+app.post('/api/admin/maintenance/cleanup', async (request, reply) => {
+  try {
+    requireAdmin(request)
+    reply.send(cleanupFinishedRooms())
+  } catch (error) {
+    sendError(reply, error)
+  }
+})
 
 app.post('/api/rooms', async (request, reply) => {
   try {
@@ -206,4 +317,5 @@ io.on('connection', (socket) => {
   })
 })
 
+scheduleCleanup()
 await app.listen({ host: '0.0.0.0', port })

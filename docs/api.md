@@ -279,6 +279,96 @@ GET /api/history/:id
 
 返回指定历史房间的完整状态，包括玩家、流水和结算。
 
+## 管理员登录
+
+```http
+POST /api/admin/login
+```
+
+请求：
+
+```json
+{
+  "password": "管理员密码"
+}
+```
+
+响应：
+
+```json
+{
+  "token": "管理员Token",
+  "expiresAt": "2026-05-21T12:00:00.000Z"
+}
+```
+
+管理员密码通过服务端 `ADMIN_PASSWORD` 环境变量配置。未配置时，管理员登录不可用。
+
+后续管理员接口需要携带：
+
+```http
+Authorization: Bearer 管理员Token
+```
+
+## 管理概览
+
+```http
+GET /api/admin/summary
+```
+
+返回对局、玩家、流水、结算数量和维护任务配置。
+
+## 管理对局列表
+
+```http
+GET /api/admin/rooms
+```
+
+返回当前数据库中的对局列表，包括房间号、状态、玩家数量、流水数量和最后活跃时间。
+
+## 管理对局详情
+
+```http
+GET /api/admin/rooms/:id
+```
+
+返回指定对局的完整状态，包括玩家、流水和结算。
+
+## 删除对局
+
+```http
+DELETE /api/admin/rooms/:id
+```
+
+删除指定对局，并通过数据库外键级联删除该对局的玩家、流水和结算数据。该操作不可恢复。
+
+## 维护任务配置
+
+```http
+GET /api/admin/maintenance
+PUT /api/admin/maintenance
+```
+
+配置示例：
+
+```json
+{
+  "cleanupEnabled": true,
+  "cleanupFinishedDays": 30,
+  "cleanupIntervalHours": 24
+}
+```
+
+当前自动清理仅删除已结束且超过保留天数的对局。
+
+## 立即清理
+
+```http
+POST /api/admin/maintenance/cleanup
+```
+
+立即执行一次已结束对局清理。
+
 ## Socket.IO 事件
 
 ### room:join

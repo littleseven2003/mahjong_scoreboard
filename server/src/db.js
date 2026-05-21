@@ -78,6 +78,12 @@ db.exec(`
     FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE,
     FOREIGN KEY (player_id) REFERENCES players(id)
   );
+
+  CREATE TABLE IF NOT EXISTS admin_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
 `)
 
 function addColumnIfMissing(table, column, definition) {

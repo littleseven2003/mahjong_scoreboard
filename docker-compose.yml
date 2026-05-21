@@ -7,6 +7,8 @@ services:
       PORT: 3100
       DB_PATH: /app/data/mahjong.db
       CORS_ORIGIN: http://localhost:8899
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:-}
     volumes:
       - ./server/data:/app/data
     expose:

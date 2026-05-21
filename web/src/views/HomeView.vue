@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { api, type RoomState } from '../api/client'
 import AppLogo from '../components/AppLogo.vue'
 
+const router = useRouter()
 const CONTINUE_TIMEOUT_MS = 12 * 60 * 60 * 1000
 const githubUrl = 'https://github.com/littleseven2003/mahjong_scoreboard'
 const author = 'littleseven2003'
-const version = 'v1.2.1'
+const version = 'v1.3.0-admin-alpha.1'
 const homeHighlights = ['实时同步', '双方确认撤销', 'Docker 部署']
 
 type ContinueRoom = {
@@ -16,6 +18,10 @@ type ContinueRoom = {
 
 const continuableRooms = ref<ContinueRoom[]>([])
 const continueLoading = ref(false)
+const adminDialogOpen = ref(false)
+const adminPassword = ref('')
+const adminLoading = ref(false)
+const adminError = ref('')
 
 async function loadContinuableRooms() {
   continueLoading.value = true
@@ -54,6 +60,22 @@ function removeContinueRoom(code: string) {
   continuableRooms.value = continuableRooms.value.filter((item) => item.state.room.code !== code)
 }
 
+async function verifyAdmin() {
+  adminLoading.value = true
+  adminError.value = ''
+  try {
+    const result = await api.adminLogin(adminPassword.value)
+    sessionStorage.setItem('mahjong_scoreboard_admin_token', result.token)
+    adminDialogOpen.value = false
+    adminPassword.value = ''
+    router.push('/admin')
+  } catch (err) {
+    adminError.value = err instanceof Error ? err.message : '管理员验证失败'
+  } finally {
+    adminLoading.value = false
+  }
+}
+
 onMounted(() => {
   loadContinuableRooms()
 })
@@ -70,7 +92,8 @@ onMounted(() => {
       <div class="home-actions">
         <RouterLink class="primary-button" to="/room/create">创建房间</RouterLink>
         <RouterLink class="secondary-button" to="/room/join">加入房间</RouterLink>
-        <RouterLink class="ghost-button" to="/history">历史记录</RouterLink>
+        <RouterLink class="ghost-button home-history-link" to="/history">历史记录</RouterLink>
+        <button class="ghost-button" type="button" @click="adminDialogOpen = true">管理</button>
       </div>
     </header>
 
@@ -124,5 +147,25 @@ onMounted(() => {
       <span>版本：{{ version }}</span>
       <span>协议：GPL-3.0</span>
     </footer>
+
+    <div v-if="adminDialogOpen" class="modal-backdrop">
+      <section class="modal-card">
+        <h2>管理员验证</h2>
+        <p class="helper-text">请输入服务端配置的管理员密码。</p>
+        <label>
+          <span>管理员密码</span>
+          <input
+            v-model="adminPassword"
+            type="password"
+            autocomplete="current-password"
+            placeholder="请输入管理员密码"
+            @keyup.enter="verifyAdmin"
+          >
+        </label>
+        <p v-if="adminError" class="error-text">{{ adminError }}</p>
+        <button class="primary-button" :disabled="adminLoading || !adminPassword" @click="verifyAdmin">进入管理</button>
+        <button class="ghost-button modal-close" :disabled="adminLoading" @click="adminDialogOpen = false">取消</button>
+      </section>
+    </div>
   </main>
 </template>
