@@ -1053,6 +1053,40 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.notice-panel {
+  width: min(100%, 560px);
+}
+
+.notice-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.notice-list article {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid #e0e7dd;
+  border-radius: 8px;
+  background: #f8faf7;
+}
+
+.notice-list strong {
+  color: #173f32;
+}
+
+.notice-list span {
+  color: #4f6659;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.65;
+}
+
+.notice-check {
+  margin-top: 16px;
+}
+
 .qr-panel,
 .scanner-panel {
   text-align: center;
