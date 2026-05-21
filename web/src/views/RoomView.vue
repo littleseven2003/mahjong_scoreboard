@@ -501,8 +501,11 @@ async function openQrDialog() {
       <section class="score-board">
         <article v-for="player in players" :key="player.id" class="score-tile">
           <div class="player-name">
-            {{ player.nickname }}
-            <span v-if="player.isOwner">房主</span>
+            <strong>{{ player.nickname }}</strong>
+            <span class="player-tags">
+              <span v-if="player.id === roomStore.playerId">自己</span>
+              <span v-if="player.isOwner">房主</span>
+            </span>
           </div>
           <strong>{{ player.currentScore }}</strong>
           <small :class="diffClass(player.currentScore)">{{ formatDiff(player.currentScore) }}</small>

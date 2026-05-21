@@ -433,7 +433,20 @@ button:disabled {
   font-weight: 800;
 }
 
-.player-name span {
+.player-name > strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: inherit;
+  font-size: inherit;
+}
+
+.player-tags {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 4px;
+}
+
+.player-tags span {
   padding: 3px 6px;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.12);
