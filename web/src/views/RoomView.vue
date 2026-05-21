@@ -501,10 +501,10 @@ async function openQrDialog() {
       <section class="score-board">
         <article v-for="player in players" :key="player.id" class="score-tile">
           <div class="player-name">
-            <strong>{{ player.nickname }}</strong>
-            <span class="player-tags">
-              <span v-if="player.id === roomStore.playerId">自己</span>
-              <span v-if="player.isOwner">房主</span>
+            {{ player.nickname }}
+            <span>
+              <small v-if="player.id === roomStore.playerId">自己</small>
+              <small v-if="player.isOwner">房主</small>
             </span>
           </div>
           <strong>{{ player.currentScore }}</strong>

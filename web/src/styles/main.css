@@ -433,20 +433,12 @@ button:disabled {
   font-weight: 800;
 }
 
-.player-name > strong {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  color: inherit;
-  font-size: inherit;
-}
-
-.player-tags {
+.player-name span {
   display: flex;
-  flex: 0 0 auto;
   gap: 4px;
 }
 
-.player-tags span {
+.player-name small {
   padding: 3px 6px;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.12);
