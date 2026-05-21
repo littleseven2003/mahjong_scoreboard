@@ -6,7 +6,7 @@
 
 轻量、实时、适合线下麻将桌的 Web 记分与结算工具。
 
-[![Version](https://img.shields.io/badge/version-v1.3.0--admin--alpha.1-236f4e?style=for-the-badge)](https://github.com/littleseven2003/mahjong_scoreboard/releases)
+[![Version](https://img.shields.io/badge/version-v1.3.1--admin--alpha.1-236f4e?style=for-the-badge)](https://github.com/littleseven2003/mahjong_scoreboard/releases)
 [![License](https://img.shields.io/badge/license-GPL--3.0-f5d17b?style=for-the-badge)](LICENSE)
 [![Docker](https://img.shields.io/badge/deploy-Docker%20Compose-173f32?style=for-the-badge)](docs/deployment.md)
 [![Vue](https://img.shields.io/badge/frontend-Vue%203-42b883?style=for-the-badge)](https://vuejs.org/)
@@ -84,7 +84,7 @@ docker compose up -d --build
 http://服务器局域网IP:8899
 ```
 
-当前分支版本：`v1.3.0-admin-alpha.1`。该版本包含管理员与数据管理实验功能，和正式稳定版区分发布。
+当前分支版本：`v1.3.1-admin-alpha.1`。该版本包含管理员与数据管理实验功能，和正式稳定版区分发布。
 
 如需启用管理入口，请在后端环境变量中配置管理员密码：
 
