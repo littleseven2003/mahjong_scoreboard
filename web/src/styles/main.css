@@ -423,9 +423,9 @@ button:disabled {
 }
 
 .player-name {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   min-height: 24px;
   color: #dcece2;
@@ -435,6 +435,8 @@ button:disabled {
 
 .player-name span {
   display: flex;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
   gap: 4px;
 }
 
@@ -443,6 +445,8 @@ button:disabled {
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.12);
   font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .score-tile strong {
@@ -486,14 +490,20 @@ button:disabled {
   background: #ffffff;
 }
 
-.list-row,
-.settlement-row {
+.list-row {
   grid-template-columns: 64px 1fr auto;
+  align-items: center;
+}
+
+.settlement-row {
+  grid-template-columns: minmax(104px, 1.25fr) minmax(58px, 0.8fr) auto;
   align-items: center;
 }
 
 .settlement-row strong {
   grid-column: span 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .settlement-row span {
