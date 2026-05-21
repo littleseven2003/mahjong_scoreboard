@@ -544,6 +544,25 @@ button:disabled {
   gap: 2px;
 }
 
+.invite-actions {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px !important;
+}
+
+.invite-actions .secondary-button {
+  width: auto;
+  margin-top: 0;
+}
+
+.invite-copy-message {
+  margin: -4px 0 12px;
+  color: #236f4e;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .room-invite span,
 .invite-link span {
   color: #67786d;
@@ -929,6 +948,14 @@ button:disabled {
 
   .room-invite {
     grid-template-columns: 1fr;
+  }
+
+  .invite-actions {
+    justify-content: stretch;
+  }
+
+  .invite-actions .secondary-button {
+    width: 100%;
   }
 
   .continue-item {

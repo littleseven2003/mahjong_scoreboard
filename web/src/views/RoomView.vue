@@ -20,6 +20,7 @@ const undoDialogTransactionId = ref<number | null>(null)
 const qrDialogOpen = ref(false)
 const qrCodeUrl = ref('')
 const qrError = ref('')
+const inviteCopyMessage = ref('')
 const allReadyNotified = ref(false)
 const lastRoomStatus = ref('')
 type PromptDialog = {
@@ -481,6 +482,16 @@ async function openQrDialog() {
     qrError.value = '二维码生成失败，请直接复制房间号邀请玩家加入'
   }
 }
+
+async function copyInviteLink() {
+  inviteCopyMessage.value = ''
+  try {
+    await navigator.clipboard.writeText(joinRoomUrl.value)
+    inviteCopyMessage.value = '邀请链接已复制'
+  } catch {
+    inviteCopyMessage.value = '复制失败，请手动复制二维码链接'
+  }
+}
 </script>
 
 <template>
@@ -523,8 +534,12 @@ async function openQrDialog() {
             <span>房间号</span>
             <strong>{{ code }}</strong>
           </div>
-          <button class="secondary-button compact-button" type="button" @click="openQrDialog">查看二维码</button>
+          <div class="invite-actions">
+            <button class="secondary-button compact-button" type="button" @click="copyInviteLink">复制邀请链接</button>
+            <button class="secondary-button compact-button" type="button" @click="openQrDialog">查看二维码</button>
+          </div>
         </div>
+        <p v-if="inviteCopyMessage" class="invite-copy-message">{{ inviteCopyMessage }}</p>
         <div class="list">
           <div v-for="player in players" :key="player.id" class="list-row">
             <span>{{ player.seatNo }} 位</span>
