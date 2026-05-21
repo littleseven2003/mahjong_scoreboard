@@ -91,6 +91,10 @@ onUnmounted(() => {
           <strong>责任边界</strong>
           <span>使用者应遵守所在地法律法规。因使用本软件产生的任何人身、财产、牌局争议、违法违规后果或第三方纠纷，软件作者和测试部署提供者不承担责任。</span>
         </article>
+        <article>
+          <strong>开源协议</strong>
+          <span>本软件遵循 GPL-3.0 开源协议。未经合规授权，不得将本软件用于商业售卖、封闭分发或其他违反开源协议的用途；如进行二次开发、修改或再分发，应继续遵守相应开源协议要求。</span>
+        </article>
       </div>
       <label class="check-row notice-check">
         <input v-model="suppressNotice" type="checkbox">
